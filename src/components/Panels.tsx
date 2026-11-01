@@ -137,7 +137,7 @@ function Activity() {
       </h2>
       <ol className="log">
         {sim.state.log.map((e) => {
-          const color = e.who === 'you' ? '#ffe14a' : e.who === 'city' ? '#9b94b8' : AGENT_BY_ID[e.who].color;
+          const color = e.who === 'you' ? '#f0d48a' : e.who === 'city' ? '#b3a48e' : AGENT_BY_ID[e.who].color;
           const name = e.who === 'you' ? t.whoYou : e.who === 'city' ? t.whoCity : agentName(lang, e.who);
           return (
             <li key={e.id} className={`log-item who-${e.who}`}>
@@ -221,7 +221,7 @@ function Sparkline({ data }: { data: number[] }) {
   const pts = data.map((v, i) => `${(i / Math.max(1, data.length - 1)) * w},${h - (v / max) * h}`).join(' ');
   return (
     <svg className="spark" width={w} height={h} viewBox={`0 -2 ${w} ${h + 4}`}>
-      <polyline points={pts} fill="none" stroke="#3ee0ff" strokeWidth={1.6} />
+      <polyline points={pts} fill="none" stroke="#e4c27a" strokeWidth={1.6} />
     </svg>
   );
 }
