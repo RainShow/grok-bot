@@ -67,14 +67,14 @@ export function shade(hex: string, amt: number) {
   return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
 }
 
-/** Blend a colour toward dusk navy; n in 0..1. */
+/** Blend a colour toward brass-night charcoal; n in 0..1. */
 export function dusk(hex: string, n: number) {
   if (n <= 0) return hex;
   const a = parseInt(hex.slice(1), 16);
-  const t = 0.62 * n;
+  const t = 0.4 * n;
   const mix = (v: number, to: number) => Math.round(v + (to - v) * t);
-  const r = mix((a >> 16) & 255, 0x23);
-  const g = mix((a >> 8) & 255, 0x27);
-  const b = mix(a & 255, 0x55);
+  const r = mix((a >> 16) & 255, 0x1a);
+  const g = mix((a >> 8) & 255, 0x14);
+  const b = mix(a & 255, 0x0e);
   return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
 }
