@@ -241,7 +241,6 @@ export interface Dict {
   pause: string;
   resume: string;
   speed: string;
-  langLabel: string;
   langSwitch: string;
   approvals: string;
   yourCall: string;
@@ -321,7 +320,6 @@ const zh: Dict = {
   pause: '暂停',
   resume: '继续',
   speed: '速度',
-  langLabel: '中',
   langSwitch: '切换到英文',
   approvals: '审批',
   yourCall: '你的决定',
@@ -401,8 +399,7 @@ const en: Dict = {
   pause: 'Pause',
   resume: 'Resume',
   speed: 'Speed',
-  langLabel: 'EN',
-  langSwitch: '切换到中文',
+  langSwitch: 'Switch to Chinese',
   approvals: 'Approvals',
   yourCall: 'your call',
   allQuiet: 'All quiet. The city runs the night.',

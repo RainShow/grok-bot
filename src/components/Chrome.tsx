@@ -73,12 +73,11 @@ export function Header() {
           </span>
         </div>
         <button type="button" className="lang-toggle" data-testid="lang-toggle" onClick={toggle} aria-label={t.langSwitch} title={t.langSwitch}>
-          <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden>
+          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden>
             <circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" strokeWidth="1.3" />
             <ellipse cx="8" cy="8" rx="2.6" ry="6.2" fill="none" stroke="currentColor" strokeWidth="1.1" />
             <path d="M2.2 8h11.6M3.2 5.2h9.6M3.2 10.8h9.6" fill="none" stroke="currentColor" strokeWidth="1" />
           </svg>
-          <span>{t.langLabel}</span>
         </button>
       </div>
     </header>
