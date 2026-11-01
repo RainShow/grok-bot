@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState, type PointerEvent } from 'react';
 import { AgentCards } from './components/AgentCards';
 import { CameraControls } from './components/CameraControls';
-import { Header } from './components/Chrome';
+import { Header, Telemetry } from './components/Chrome';
 import { LeftPanel, RightPanel } from './components/Panels';
 import { SummaryModal } from './components/SummaryModal';
 import { City } from './components/city/City';
@@ -29,6 +29,7 @@ function Dashboard() {
   const [pan, setPan] = useState<Pt>({ x: 0, y: 0 });
   const [labels, setLabels] = useState(true);
   const drag = useRef<{ x: number; y: number; px: number; py: number } | null>(null);
+  const xyRef = useRef<HTMLSpanElement>(null);
 
   const reset = useCallback(() => {
     setRot(0);
@@ -36,12 +37,22 @@ function Dashboard() {
     setPan({ x: 0, y: 0 });
   }, []);
 
+  const track = (e: PointerEvent<HTMLDivElement>) => {
+    const el = xyRef.current;
+    if (!el) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+    const y = Math.min(1, Math.max(0, (e.clientY - rect.top) / rect.height));
+    el.textContent = `X ${x.toFixed(3)} · Y ${y.toFixed(3)}`;
+  };
   const onDown = (e: PointerEvent<HTMLDivElement>) => {
+    track(e);
     if ((e.target as HTMLElement).closest('button, .panel, .stats-strip')) return;
     drag.current = { x: e.clientX, y: e.clientY, px: pan.x, py: pan.y };
     (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
   };
   const onMove = (e: PointerEvent<HTMLDivElement>) => {
+    track(e);
     if (!drag.current) return;
     setPan({ x: drag.current.px + (e.clientX - drag.current.x), y: drag.current.py + (e.clientY - drag.current.y) });
   };
@@ -60,10 +71,13 @@ function Dashboard() {
           onPointerUp={onUp}
           onPointerCancel={onUp}
         >
+          <div className="shafts" aria-hidden />
+          <div className="mist" aria-hidden />
           <div className="stars" aria-hidden />
           <div className="vignette" aria-hidden />
           <City rot={rot} zoom={ZOOMS[zoomIdx]} pan={pan} labels={labels} />
         </div>
+        <Telemetry xyRef={xyRef} />
         <LeftPanel />
         <RightPanel />
         <CameraControls

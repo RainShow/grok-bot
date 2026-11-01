@@ -16,7 +16,7 @@ export function SummaryModal() {
   return (
     <div className="modal-backdrop" onClick={() => sim.closeSummary()}>
       <div className="modal" role="dialog" aria-label={t.summaryAria} onClick={(e) => e.stopPropagation()}>
-        <div className="crumbs">{t.crumbs}</div>
+        <div className="crumbs">[ {t.crumbs} ]</div>
         <h2>{t.summary(s.ended, formatClock(s.clock))}</h2>
         <div className="modal-stats">
           <div><span>{t.views}</span><b>{formatCompact(m.views)}</b></div>

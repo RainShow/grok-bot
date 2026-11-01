@@ -12,12 +12,12 @@ export interface AgentDef {
 }
 
 export const AGENTS: AgentDef[] = [
-  { id: 'cut', name: '拆镜', role: '拆开片子', color: '#3ee0ff', home: 'newsroom', shape: 'pill' },
-  { id: 'hook', name: '钩子', role: '写那一句', color: '#ff4d9a', home: 'writers', shape: 'ghost' },
-  { id: 'platform', name: '平台', role: '改成能发的尺寸', color: '#ff8a3d', home: 'studio', shape: 'pill' },
-  { id: 'archive', name: '归档', role: '让数字过夜', color: '#ffe14a', home: 'bank', shape: 'tri' },
-  { id: 'gate', name: '门卫', role: '不点头就不发', color: '#b388ff', home: 'cafe', shape: 'ghost' },
-  { id: 'dispatch', name: '发报', role: '只做模拟发出', color: '#3dffb0', home: 'post', shape: 'ghost' },
+  { id: 'cut', name: '拆镜', role: '拆开片子', color: '#9ec4e0', home: 'newsroom', shape: 'pill' },
+  { id: 'hook', name: '钩子', role: '写那一句', color: '#d7c4b2', home: 'writers', shape: 'ghost' },
+  { id: 'platform', name: '平台', role: '改成能发的尺寸', color: '#b7c4a4', home: 'studio', shape: 'pill' },
+  { id: 'archive', name: '归档', role: '让数字过夜', color: '#e0d2a8', home: 'bank', shape: 'tri' },
+  { id: 'gate', name: '门卫', role: '不点头就不发', color: '#c5ced8', home: 'cafe', shape: 'ghost' },
+  { id: 'dispatch', name: '发报', role: '只做模拟发出', color: '#c4f93e', home: 'post', shape: 'ghost' },
 ];
 
 export const AGENT_BY_ID = Object.fromEntries(AGENTS.map((a) => [a.id, a])) as Record<AgentId, AgentDef>;
@@ -30,13 +30,13 @@ export interface SeriesDoor {
 }
 
 export const SERIES: SeriesDoor[] = [
-  { id: 'time', color: '#7cf6ff' },
-  { id: 'cause', color: '#ff4d9a' },
-  { id: 'gravity', color: '#ff8a3d' },
-  { id: 'sense', color: '#b388ff' },
-  { id: 'scale', color: '#3dffb0' },
-  { id: 'form', color: '#ffe14a' },
-  { id: 'path', color: '#7aa2ff' },
+  { id: 'time', color: '#c5d8ea' },
+  { id: 'cause', color: '#d8cbb8' },
+  { id: 'gravity', color: '#c4b48a' },
+  { id: 'sense', color: '#b7c0cc' },
+  { id: 'scale', color: '#c4f93e' },
+  { id: 'form', color: '#e6e8ea' },
+  { id: 'path', color: '#8eafc8' },
 ];
 
 export type StageKey = 'found' | 'written' | 'adapted' | 'archived' | 'gated' | 'published';

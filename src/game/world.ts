@@ -27,40 +27,40 @@ export interface Building extends Structure {
 export const BUILDINGS: Building[] = [
   {
     id: 'newsroom', no: '01', name: '拆镜塔', tagline: '拆开每一条时间线', kind: 'tower',
-    x0: 1, y0: 0.9, x1: 3.2, y1: 3.1, h: 170, color: '#24315f', door: [4, 2], sign: '拆镜',
+    x0: 1, y0: 0.9, x1: 3.2, y1: 3.1, h: 170, color: '#2c333c', door: [4, 2], sign: '拆镜',
   },
   {
     id: 'writers', no: '02', name: '钩子房', tagline: '三道门，只留一道', kind: 'house',
-    x0: 5.3, y0: 0.8, x1: 7.6, y1: 3, h: 62, color: '#4a2d5c', roof: '#ff4d9a', door: [6, 4],
+    x0: 5.3, y0: 0.8, x1: 7.6, y1: 3, h: 62, color: '#343b44', roof: '#4a525c', door: [6, 4],
   },
   {
     id: 'post', no: '03', name: '发报台', tagline: '模拟发出，不真发', kind: 'postoffice',
-    x0: 9.3, y0: 5.2, x1: 12.1, y1: 7.7, h: 78, color: '#145056', door: [8, 6], sign: '发报',
+    x0: 9.3, y0: 5.2, x1: 12.1, y1: 7.7, h: 78, color: '#262c34', door: [8, 6], sign: '发报',
   },
   {
     id: 'studio', no: '04', name: '平台棚', tagline: '改成能发出去的尺寸', kind: 'studio',
-    x0: 0.5, y0: 5.2, x1: 3.3, y1: 7.7, h: 92, color: '#4a3818', door: [4, 6], sign: '平台',
+    x0: 0.5, y0: 5.2, x1: 3.3, y1: 7.7, h: 92, color: '#303740', door: [4, 6], sign: '平台',
   },
   {
     id: 'bank', no: '05', name: '归档库', tagline: '数字在这里过夜', kind: 'bank',
-    x0: 5.3, y0: 9.3, x1: 7.8, y1: 11.8, h: 64, color: '#3c3418', roof: '#ffe14a', door: [6, 8], sign: '归档',
+    x0: 5.3, y0: 9.3, x1: 7.8, y1: 11.8, h: 64, color: '#383f48', roof: '#525a64', door: [6, 8], sign: '归档',
   },
   {
     id: 'cafe', no: '06', name: '门卫亭', tagline: '不点头，就不发', kind: 'cafe',
-    x0: 9.4, y0: 9.4, x1: 11.6, y1: 11.5, h: 56, color: '#3a2458', door: [10, 8], sign: '门卫',
+    x0: 9.4, y0: 9.4, x1: 11.6, y1: 11.5, h: 56, color: '#2a3139', door: [10, 8], sign: '门卫',
   },
 ];
 
 export const BUILDING_BY_ID = Object.fromEntries(BUILDINGS.map((b) => [b.id, b])) as Record<BuildingId, Building>;
 
 export const FILLERS: Structure[] = [
-  { id: 'f1', kind: 'apt', x0: 0.4, y0: 9.3, x1: 2.2, y1: 11, h: 110, color: '#3a2848' },
-  { id: 'f2', kind: 'cottage', x0: 2.6, y0: 11.1, x1: 3.7, y1: 12.4, h: 36, color: '#2a2438', roof: '#ff4d9a' },
-  { id: 'f3', kind: 'cottage', x0: 0.5, y0: 11.5, x1: 1.8, y1: 12.6, h: 34, color: '#241e38', roof: '#7aa2ff' },
-  { id: 'f4', kind: 'apt', x0: 9.3, y0: 0.6, x1: 10.8, y1: 2.1, h: 96, color: '#1a4038' },
-  { id: 'f5', kind: 'apt', x0: 11.2, y0: 0.6, x1: 12.5, y1: 3.2, h: 140, color: '#2c2458' },
-  { id: 'f7', kind: 'apt', x0: 12.1, y0: 9.4, x1: 12.8, y1: 11.8, h: 120, color: '#32285a' },
-  { id: 'f8', kind: 'cottage', x0: 5.4, y0: 12.0, x1: 6.6, y1: 12.8, h: 30, color: '#163832', roof: '#3dffb0' },
+  { id: 'f1', kind: 'apt', x0: 0.4, y0: 9.3, x1: 2.2, y1: 11, h: 110, color: '#343b44' },
+  { id: 'f2', kind: 'cottage', x0: 2.6, y0: 11.1, x1: 3.7, y1: 12.4, h: 36, color: '#2a3038', roof: '#454d56' },
+  { id: 'f3', kind: 'cottage', x0: 0.5, y0: 11.5, x1: 1.8, y1: 12.6, h: 34, color: '#242a32', roof: '#3e4650' },
+  { id: 'f4', kind: 'apt', x0: 9.3, y0: 0.6, x1: 10.8, y1: 2.1, h: 96, color: '#2e353e' },
+  { id: 'f5', kind: 'apt', x0: 11.2, y0: 0.6, x1: 12.5, y1: 3.2, h: 140, color: '#323942' },
+  { id: 'f7', kind: 'apt', x0: 12.1, y0: 9.4, x1: 12.8, y1: 11.8, h: 120, color: '#282e36' },
+  { id: 'f8', kind: 'cottage', x0: 5.4, y0: 12.0, x1: 6.6, y1: 12.8, h: 30, color: '#262c34', roof: '#3c444e' },
 ];
 
 export const TREES: [number, number][] = [
@@ -85,13 +85,13 @@ export const HUB = { x: 7.15, y: 7.15 };
 export const PUMPKIN = { x: 6.55, y: 6.55 };
 
 export const SERIES_GATES: { id: 'time' | 'cause' | 'gravity' | 'sense' | 'scale' | 'form' | 'path'; color: string; x: number; y: number }[] = [
-  { id: 'time', color: '#7cf6ff', x: 4.62, y: 5.55 },
-  { id: 'cause', color: '#ff4d9a', x: 5.55, y: 4.62 },
-  { id: 'gravity', color: '#ff8a3d', x: 7.45, y: 4.62 },
-  { id: 'sense', color: '#b388ff', x: 8.38, y: 5.55 },
-  { id: 'scale', color: '#3dffb0', x: 4.62, y: 7.45 },
-  { id: 'form', color: '#ffe14a', x: 6.5, y: 8.38 },
-  { id: 'path', color: '#7aa2ff', x: 8.38, y: 7.45 },
+  { id: 'time', color: '#c5d8ea', x: 4.62, y: 5.55 },
+  { id: 'cause', color: '#d8cbb8', x: 5.55, y: 4.62 },
+  { id: 'gravity', color: '#c4b48a', x: 7.45, y: 4.62 },
+  { id: 'sense', color: '#b7c0cc', x: 8.38, y: 5.55 },
+  { id: 'scale', color: '#c4f93e', x: 4.62, y: 7.45 },
+  { id: 'form', color: '#e6e8ea', x: 6.5, y: 8.38 },
+  { id: 'path', color: '#8eafc8', x: 8.38, y: 7.45 },
 ];
 
 export const CONVEYORS: [number, number][][] = [

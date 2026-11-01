@@ -31,7 +31,7 @@ function NeedsYou() {
   return (
     <section className="section needs">
       <h2>
-        {t.approvals}
+        <span className="hud">[ {t.approvals} ]</span>
         {prompts.length > 0 && <span className="badge">{prompts.length}</span>}
         <span className="section-aside">{t.yourCall}</span>
       </h2>
@@ -131,13 +131,13 @@ function Activity() {
   return (
     <section className="section activity">
       <h2>
-        city.log
+        <span className="hud">[ CITY.LOG ]</span>
         <span className="live-dot tiny" />
         <span className="section-aside">{t.live}</span>
       </h2>
       <ol className="log">
         {sim.state.log.map((e) => {
-          const color = e.who === 'you' ? '#ffe14a' : e.who === 'city' ? '#9b94b8' : AGENT_BY_ID[e.who].color;
+          const color = e.who === 'you' ? '#c4f93e' : e.who === 'city' ? '#8b959e' : AGENT_BY_ID[e.who].color;
           const name = e.who === 'you' ? t.whoYou : e.who === 'city' ? t.whoCity : agentName(lang, e.who);
           return (
             <li key={e.id} className={`log-item who-${e.who}`}>
@@ -172,7 +172,7 @@ function Pipeline() {
   return (
     <section className="section pipeline">
       <h2>
-        {t.mission}
+        <span className="hud">[ {t.mission} ]</span>
         <span className="section-aside">
           {s.metrics.posts}/{POSTS_PER_DAY} {t.sent}
         </span>
@@ -221,7 +221,7 @@ function Sparkline({ data }: { data: number[] }) {
   const pts = data.map((v, i) => `${(i / Math.max(1, data.length - 1)) * w},${h - (v / max) * h}`).join(' ');
   return (
     <svg className="spark" width={w} height={h} viewBox={`0 -2 ${w} ${h + 4}`}>
-      <polyline points={pts} fill="none" stroke="#3ee0ff" strokeWidth={1.6} />
+      <polyline points={pts} fill="none" stroke="#c5d8ea" strokeWidth={1.4} />
     </svg>
   );
 }
@@ -233,7 +233,7 @@ function Today() {
   return (
     <section className="section today">
       <h2>
-        {t.stats}
+        <span className="hud">[ {t.stats} ]</span>
         <span className="section-aside">{t.sample}</span>
       </h2>
       <div className="metric big">

@@ -33,6 +33,7 @@ export function AgentCards() {
         return (
           <div key={d.id} className={`agent-card mode-${mode} ${busy === d.id ? 'on-story' : ''}`} style={{ ['--c' as string]: d.color }}>
             <div className="ac-top">
+              <span className="ac-pip" />
               <BotIcon def={d} />
               <div className="ac-name">
                 <b>{agentName(lang, d.id)}</b>

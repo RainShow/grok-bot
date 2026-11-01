@@ -1,3 +1,4 @@
+import { useEffect, useState, type RefObject } from 'react';
 import { SERIES } from '../game/data';
 import { POSTS_PER_DAY, weatherAt } from '../game/sim';
 import { useSim } from '../game/useSim';
@@ -22,7 +23,7 @@ export function Header() {
         <div>
           <h1>
             不可思议之城
-            <span className="shift">{t.night}</span>
+            <span className="shift">[ {t.night} ]</span>
           </h1>
           {t.gloss && <div className="gloss">{t.gloss}</div>}
           <div className="verse">
@@ -81,6 +82,36 @@ export function Header() {
         </button>
       </div>
     </header>
+  );
+}
+
+function taipeiClock() {
+  try {
+    return new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Asia/Taipei',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: 'h23',
+    }).format(new Date());
+  } catch {
+    const shifted = new Date(Date.now() + 8 * 3600 * 1000);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${pad(shifted.getUTCHours())}:${pad(shifted.getUTCMinutes())}:${pad(shifted.getUTCSeconds())}`;
+  }
+}
+
+export function Telemetry({ xyRef }: { xyRef: RefObject<HTMLSpanElement | null> }) {
+  const [clock, setClock] = useState(taipeiClock);
+  useEffect(() => {
+    const id = window.setInterval(() => setClock(taipeiClock()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+  return (
+    <div className="telemetry">
+      <span ref={xyRef}>X 0.512 · Y 0.418</span>
+      <span className="mono-num">{clock}  TAIPEI</span>
+    </div>
   );
 }
 
