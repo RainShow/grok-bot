@@ -1,4 +1,4 @@
-import { AGENTS, AGENT_BY_ID, STAGES, makeSponsor, makeStory, type AgentId, type Story } from './data';
+import { AGENTS, AGENT_BY_ID, PUMPKIN_LINE, SERIES, STAGES, makeStory, type AgentId, type Story } from './data';
 import { BUILDINGS, BUILDING_BY_ID, findPath, type BuildingId, type Tile } from './world';
 
 export type TaskKind = 'stage' | 'scan' | 'count' | 'wander' | 'handoff';
@@ -30,11 +30,12 @@ export type AgentMode = 'moving' | 'working' | 'waiting' | 'idle';
 
 export interface Prompt {
   id: number;
-  kind: 'hook' | 'hottake';
+  kind: 'hook' | 'approval';
   storyId: number;
   title: string;
-  options: string[];
-  text?: string;
+  detail?: string;
+  quote?: string;
+  note?: string;
   ttl: number;
   total: number;
 }
@@ -49,18 +50,19 @@ export interface LogEntry {
 export interface Metrics {
   views: number;
   followers: number;
-  revenue: number;
+  shares: number;
   viewRate: number;
   posts: number;
   hooksPicked: number;
   hooksByYou: number;
-  takesApproved: number;
-  takesSkipped: number;
+  pumpkinPicked: number;
+  approved: number;
+  edited: number;
+  declined: number;
   autoDecisions: number;
-  sponsors: number;
 }
 
-export type Weather = 'sunny' | 'cloudy' | 'rain' | 'clear';
+export type Weather = 'clear';
 
 export interface SimState {
   t: number;
@@ -82,16 +84,15 @@ export interface SimState {
   ended: boolean;
   summaryOpen: boolean;
   activeBubble: { building: BuildingId; text: string; agent: AgentId } | null;
-  pendingRevenue: number;
   storyFromQueue: boolean;
   wrapIn: number;
 }
 
-const START_CLOCK = 7 * 60;
-const END_CLOCK = 23 * 60 + 30;
+const START_CLOCK = 21 * 60;
+const END_CLOCK = 29 * 60 + 30;
 const CLOCK_RATE = 2.5;
-const WALK_SPEED = 2.6;
-const PROMPT_TTL = 25;
+const WALK_SPEED = 2.8;
+const PROMPT_TTL = 40;
 export const POSTS_PER_DAY = 6;
 
 const rand = (a: number, b: number) => a + Math.random() * (b - a);
@@ -104,19 +105,14 @@ export function agentMode(a: AgentState): AgentMode {
 }
 
 export function weatherAt(clock: number): { weather: Weather; temp: number } {
-  const h = clock / 60;
-  const temp = Math.round(16 + 9 * Math.sin(((h - 8) / 14) * Math.PI));
-  if (h < 11) return { weather: 'sunny', temp };
-  if (h < 14) return { weather: 'cloudy', temp };
-  if (h < 15.5) return { weather: 'rain', temp: temp - 3 };
-  return { weather: h < 19 ? 'sunny' : 'clear', temp };
+  const h = (clock / 60) % 24;
+  const temp = Math.round(12 + 3 * Math.sin(((h - 21) / 12) * Math.PI));
+  return { weather: 'clear', temp };
 }
 
 export function nightAt(clock: number) {
-  const h = clock / 60;
-  if (h < 8) return 0.35 * (8 - h);
-  if (h < 18) return 0;
-  return Math.min(1, (h - 18) / 2.5);
+  const h = (clock / 60) % 24;
+  return h >= 18 || h < 7 ? 1 : 0.85;
 }
 
 export class Sim {
@@ -129,14 +125,13 @@ export class Sim {
   private logId = 0;
   private promptId = 0;
   private historyIn = 0;
-
   private startClock: number;
 
   constructor(opts: { startHour?: number } = {}) {
     const h = opts.startHour;
-    this.startClock = h !== undefined && h >= 0 && h < 23.5 ? h * 60 : START_CLOCK;
+    this.startClock = h !== undefined && h >= 0 && h < 24 ? h * 60 : START_CLOCK;
     this.state = this.initial();
-    this.log('city', 'grok city wakes up. day one begins.');
+    this.log('city', '夜班开始。不可思议之城亮了。');
   }
 
   private initial(): SimState {
@@ -145,7 +140,7 @@ export class Sim {
       const door = BUILDING_BY_ID[a.home].door;
       agents[a.id] = {
         id: a.id, at: a.home, tile: door, path: null, pos: 0, task: null, waiting: false,
-        status: 'clocking in', idleFor: rand(1, 4), doneToday: 0, carrying: null,
+        status: '到岗', idleFor: rand(0.6, 2.2), doneToday: 0, carrying: null,
       };
     }
     return {
@@ -153,10 +148,11 @@ export class Sim {
       story: null, queue: [], nextStoryId: 1, stageIdx: 0, stagePhase: 'travel',
       stageCounts: STAGES.map(() => 0), prompts: [], log: [],
       metrics: {
-        views: 0, followers: 0, revenue: 0, viewRate: 1.5, posts: 0, hooksPicked: 0, hooksByYou: 0,
-        takesApproved: 0, takesSkipped: 0, autoDecisions: 0, sponsors: 0,
+        views: 0, followers: 0, shares: 0, viewRate: 2.2, posts: 0,
+        hooksPicked: 0, hooksByYou: 0, pumpkinPicked: 0,
+        approved: 0, edited: 0, declined: 0, autoDecisions: 0,
       },
-      history: [0], ended: false, summaryOpen: false, activeBubble: null, pendingRevenue: 0,
+      history: [0], ended: false, summaryOpen: false, activeBubble: null,
       storyFromQueue: false, wrapIn: -1,
     };
   }
@@ -181,7 +177,6 @@ export class Sim {
     this.publishIn = 0;
   }
 
-  // ---------- public controls ----------
   setSpeed(s: number) {
     this.state.speed = s;
     this.state.paused = false;
@@ -194,7 +189,7 @@ export class Sim {
   wrapDay() {
     this.state.ended = true;
     this.state.summaryOpen = true;
-    this.log('city', 'day one wrapped — summary ready');
+    this.log('city', '夜班收工，汇总在这儿');
     this.publish();
   }
   openSummary() {
@@ -207,11 +202,11 @@ export class Sim {
   }
   restart() {
     this.state = this.initial();
-    this.log('city', 'grok city wakes up. day one begins.');
+    this.log('city', '又一个夜班。灯重新亮了。');
     this.publish();
   }
 
-  resolvePrompt(id: number, choice: number, auto = false) {
+  resolvePrompt(id: number, choice: number, auto = false, note?: string) {
     const s = this.state;
     const p = s.prompts.find((x) => x.id === id);
     if (!p) return;
@@ -220,22 +215,36 @@ export class Sim {
     if (!story || story.id !== p.storyId) return;
     if (auto) s.metrics.autoDecisions++;
     if (p.kind === 'hook') {
-      story.hookPick = choice;
+      if (choice >= SERIES.length) {
+        story.usedPumpkin = true;
+        story.seriesPick = '形体';
+        s.metrics.pumpkinPicked++;
+        s.metrics.viewRate += rand(80, 140);
+        this.log(auto ? 'city' : 'you', auto ? '没人应，借腹南瓜城的钩子自己亮了' : `你批准了借腹南瓜城：${PUMPKIN_LINE}`);
+      } else {
+        const door = SERIES[Math.max(0, choice)];
+        story.seriesPick = door.key;
+        this.log(auto ? 'city' : 'you', auto ? `没人应，自动选了「${door.key}」` : `你选了「${door.key}」：${door.verse}`);
+      }
       s.metrics.hooksPicked++;
       if (!auto) s.metrics.hooksByYou++;
-      const letter = 'ABC'[choice];
-      this.log(auto ? 'city' : 'you', auto ? `no answer — hook ${letter} auto-picked` : `picked hook ${letter}: “${story.hooks[choice]}”`);
+    } else if (choice === 2) {
+      story.gateDecision = 'decline';
+      s.metrics.declined++;
+      this.log(auto ? 'city' : 'you', '拒绝了。这条留在城里，不会发出去。');
+    } else if (choice === 1) {
+      story.gateDecision = 'edit';
+      story.editNote = note?.trim() || story.draft;
+      s.metrics.edited++;
+      s.metrics.followers += Math.round(rand(8, 24));
+      s.metrics.viewRate += rand(30, 70);
+      this.log('you', '改了一句。门卫放行，仍然只是模拟。');
     } else {
-      story.takeApproved = choice === 0;
-      if (choice === 0) {
-        s.metrics.takesApproved++;
-        s.metrics.followers += Math.round(rand(20, 60));
-        s.metrics.viewRate += rand(40, 90);
-        this.log('you', 'approved the hot take. reply posts it.');
-      } else {
-        s.metrics.takesSkipped++;
-        this.log(auto ? 'city' : 'you', auto ? 'no answer — hot take held for later' : 'skipped the hot take');
-      }
+      story.gateDecision = 'approve';
+      s.metrics.approved++;
+      s.metrics.followers += Math.round(rand(18, 50));
+      s.metrics.viewRate += rand(60, 120);
+      this.log('you', '门卫放行。发报只做模拟，不会真的投稿。');
     }
     const agent = s.agents[STAGES[s.stageIdx].agent];
     agent.waiting = false;
@@ -243,7 +252,6 @@ export class Sim {
     this.publish();
   }
 
-  // ---------- main loop ----------
   tick(dtReal: number) {
     const s = this.state;
     s.real += dtReal;
@@ -279,19 +287,20 @@ export class Sim {
 
   private stepPrompts(dtReal: number) {
     for (const p of [...this.state.prompts]) {
+      if (p.kind === 'approval' || p.ttl < 0) continue;
       p.ttl -= dtReal;
-      if (p.ttl <= 0) this.resolvePrompt(p.id, p.kind === 'hook' ? 0 : 1, true);
+      if (p.ttl <= 0) this.resolvePrompt(p.id, 0, true);
     }
   }
 
   private stepMetrics(dt: number) {
     const m = this.state.metrics;
     const before = m.views;
-    m.viewRate = 1.5 + (m.viewRate - 1.5) * Math.exp(-dt / 70);
+    m.viewRate = 2.2 + (m.viewRate - 2.2) * Math.exp(-dt / 70);
     m.views += m.viewRate * dt * rand(0.7, 1.3);
     const dv = m.views - before;
-    m.followers += dv * 0.0065;
-    m.revenue += dv * 0.0011;
+    m.followers += dv * 0.0045;
+    m.shares += dv * 0.0016;
     this.historyIn -= dt;
     if (this.historyIn <= 0) {
       this.historyIn = 6;
@@ -300,7 +309,6 @@ export class Sim {
     }
   }
 
-  // ---------- story / pipeline ----------
   private stepStory() {
     const s = this.state;
     if (!s.story) {
@@ -316,13 +324,12 @@ export class Sim {
     const agent = s.agents[stage.agent];
     if (s.stagePhase === 'travel') {
       if (agent.task?.kind !== 'stage') {
-        const work = stage.key === 'found' && s.storyFromQueue ? 2 : stage.work;
+        const work = stage.key === 'found' && s.storyFromQueue ? 1.6 : stage.work;
         this.assign(agent, { kind: 'stage', building: stage.building, work, left: work, status: stage.bubble, storyId: s.story.id });
       }
       if (agent.at === stage.building && !agent.path) {
         s.stagePhase = 'work';
         s.activeBubble = { building: stage.building, text: stage.bubble, agent: stage.agent };
-        if (stage.key === 'sponsored') s.story.sponsor = makeSponsor();
         this.changed();
       }
     }
@@ -337,47 +344,52 @@ export class Sim {
     agent.doneToday++;
     switch (stage.key) {
       case 'found':
-        this.log('scout', `found “${story.title}” trending (${Math.round(story.likes / 1000)}k likes)`);
+        this.log('cut', `拆开「${story.title}」`);
         break;
       case 'written':
-        this.log('hook', `wrote three hooks for “${story.title}”`);
+        this.log('hook', '钩子写好了，等你选一道门');
         break;
-      case 'edited':
-        this.log('reel', 'rough cut done, 42 seconds');
+      case 'adapted':
+        this.log('platform', '改成竖屏，字幕压短');
         break;
-      case 'sponsored':
-        s.metrics.sponsors++;
-        s.pendingRevenue += story.sponsor?.fee ?? 0;
-        this.log('reply', `${story.sponsor?.name} sponsored it for $${story.sponsor?.fee}`);
+      case 'archived':
+        this.log('archive', '归档编号写好了');
         break;
-      case 'rendered':
-        this.log('reel', 'rendered at 1080p (eventually)');
-        break;
-      case 'reviewed':
-        this.log('ledger', 'numbers check out. ship it.');
+      case 'gated':
+        this.log('gate', '拦在门口：批准才发');
         break;
       case 'published':
-        s.metrics.posts++;
-        s.metrics.viewRate += rand(140, 260);
-        this.log('post', `published post #${s.metrics.posts} to the timeline`);
-        break;
-      case 'crosspost':
-        s.metrics.viewRate += rand(50, 110);
-        this.log('post', 'cross-posted to 3 more feeds');
-        break;
-      case 'hottake':
-        this.log('reply', 'drafted a hot take — waiting for you');
+        if (story.gateDecision === 'decline') {
+          this.log('dispatch', '门卫没放行，这条留在内部档');
+        } else {
+          s.metrics.posts++;
+          s.metrics.viewRate += rand(120, 220);
+          s.metrics.shares += rand(6, 18);
+          this.log('dispatch', `模拟发出第 ${s.metrics.posts} 条。没有真的投稿。`);
+        }
         break;
     }
     if (stage.gate) {
       agent.waiting = true;
-      agent.status = 'waiting on you';
+      agent.status = '等你拍板';
       s.stagePhase = 'gate';
-      s.activeBubble = { building: stage.building, text: 'needs you', agent: stage.agent };
-      const p: Prompt =
-        stage.gate === 'hook'
-          ? { id: ++this.promptId, kind: 'hook', storyId: story.id, title: `pick a hook for “${story.title}”`, options: story.hooks, ttl: PROMPT_TTL, total: PROMPT_TTL }
-          : { id: ++this.promptId, kind: 'hottake', storyId: story.id, title: 'reply wants to post a hot take', text: story.take, options: ['approve', 'skip'], ttl: PROMPT_TTL, total: PROMPT_TTL };
+      s.activeBubble = { building: stage.building, text: '需要你', agent: stage.agent };
+      const p: Prompt = stage.gate === 'hook'
+        ? {
+            id: ++this.promptId, kind: 'hook', storyId: story.id,
+            title: '今晚主打哪一道门？',
+            detail: story.title,
+            quote: story.draft,
+            ttl: PROMPT_TTL, total: PROMPT_TTL,
+          }
+        : {
+            id: ++this.promptId, kind: 'approval', storyId: story.id,
+            title: '发报前，门卫要你点头',
+            detail: story.seriesPick ? `主打「${story.seriesPick}」${story.usedPumpkin ? ' · 借腹南瓜城' : ''}` : '主打还没写上',
+            quote: story.editNote || story.draft,
+            note: '模拟审批。点批准也不会发到站外。',
+            ttl: -1, total: 1,
+          };
       s.prompts.push(p);
     } else {
       this.advanceStage();
@@ -399,30 +411,30 @@ export class Sim {
     if (prev.agent !== next.agent && prev.building !== next.building) {
       const carrier = s.agents[prev.agent];
       carrier.carrying = next.agent;
-      this.assign(carrier, { kind: 'handoff', building: next.building, work: 1, left: 1, status: `bringing the story to ${next.agent}` });
-      s.activeBubble = { building: next.building, text: `bringing the story to ${next.agent}`, agent: prev.agent };
+      const nextName = AGENT_BY_ID[next.agent].name;
+      this.assign(carrier, { kind: 'handoff', building: next.building, work: 1, left: 1, status: `把稿子送到${nextName}` });
+      s.activeBubble = { building: next.building, text: `送到${nextName}`, agent: prev.agent };
     }
   }
 
   private finishStory() {
     const s = this.state;
     const story = s.story!;
-    this.log('city', `“${story.title}” made it through the whole pipeline`);
+    this.log('city', `「${story.title}」走完这条夜班街`);
     s.story = null;
     s.activeBubble = null;
-    const ledger = s.agents.ledger;
-    this.assign(ledger, { kind: 'count', building: 'bank', work: 3, left: 3, status: 'counting today’s money' });
+    const archive = s.agents.archive;
+    this.assign(archive, { kind: 'count', building: 'bank', work: 2.4, left: 2.4, status: '清点今晚的分享' });
     if (s.metrics.posts >= POSTS_PER_DAY) {
-      this.log('city', 'six posts a day — quota hit. wrapping up.');
-      s.wrapIn = 5;
+      this.log('city', '六条额度满了。准备收班。');
+      s.wrapIn = 4;
     }
   }
 
-  // ---------- agents ----------
   private assign(a: AgentState, task: Task) {
     a.task = task;
     if (task.kind !== 'handoff') a.carrying = null;
-    a.status = task.kind === 'stage' && a.at !== task.building ? `heading to ${BUILDING_BY_ID[task.building].name}` : task.status;
+    a.status = task.kind === 'stage' && a.at !== task.building ? `前往${BUILDING_BY_ID[task.building].name}` : task.status;
     if (a.at !== task.building) this.walk(a, task.building);
     this.changed();
   }
@@ -458,8 +470,8 @@ export class Sim {
       if (a.task.left <= 0) {
         const t = a.task;
         a.task = null;
-        a.idleFor = rand(2, 6);
-        a.status = 'idle';
+        a.idleFor = rand(1.5, 4);
+        a.status = '空闲';
         this.finishTask(a, t);
       }
       return;
@@ -481,17 +493,13 @@ export class Sim {
         if (s.queue.length < 3 && s.metrics.posts + s.queue.length < POSTS_PER_DAY) {
           const story = makeStory(s.nextStoryId++);
           s.queue.push(story);
-          this.log('scout', `bookmarked “${story.title}” for later`);
+          this.log('cut', `先夹住「${story.title}」`);
         }
         break;
       }
-      case 'count': {
-        const fee = s.pendingRevenue;
-        s.pendingRevenue = 0;
-        s.metrics.revenue += fee;
-        this.log('ledger', fee > 0 ? `counted $${fee} in sponsor money` : 'counted views. nothing new to bank.');
+      case 'count':
+        this.log('archive', `清点完毕：浏览 ${Math.round(s.metrics.views)}，分享 ${Math.round(s.metrics.shares)}`);
         break;
-      }
       case 'handoff':
         a.carrying = null;
         break;
@@ -503,21 +511,22 @@ export class Sim {
 
   private pickIdleTask(a: AgentState) {
     const s = this.state;
-    if (a.id === 'scout' && s.queue.length < 2 && s.metrics.posts + s.queue.length < POSTS_PER_DAY) {
-      this.assign(a, { kind: 'scan', building: 'newsroom', work: 7, left: 7, status: 'scrolling the timeline' });
+    if (a.id === 'cut' && s.queue.length < 2 && s.metrics.posts + s.queue.length < POSTS_PER_DAY) {
+      this.assign(a, { kind: 'scan', building: 'newsroom', work: 5, left: 5, status: '翻时间线' });
       return;
     }
+    const home = AGENT_BY_ID[a.id].home;
     const options: { b: BuildingId; status: string }[] = [
-      { b: 'cafe', status: 'coffee at the café' },
-      { b: AGENT_BY_ID[a.id].home, status: 'back at the desk' },
-      { b: 'newsroom', status: 'peeking at trends' },
-      { b: 'studio', status: 'watching dailies' },
-      { b: 'bank', status: 'checking the balance' },
-      { b: 'writers', status: 'stealing a hook idea' },
-      { b: 'post', status: 'reading replies' },
+      { b: 'cafe', status: '在门卫亭门口等' },
+      { b: home, status: '回到自己的楼' },
+      { b: 'newsroom', status: '偷看时间线' },
+      { b: 'studio', status: '看平台成片' },
+      { b: 'bank', status: '翻档案' },
+      { b: 'writers', status: '偷一句钩子' },
+      { b: 'post', status: '看发报队列' },
     ];
     const choice = Math.random() < 0.5 ? options[Math.floor(Math.random() * 2)] : options[Math.floor(Math.random() * options.length)];
-    const work = rand(3, 7);
+    const work = rand(2.5, 5.5);
     this.assign(a, { kind: 'wander', building: choice.b, work, left: work, status: choice.status });
   }
 }

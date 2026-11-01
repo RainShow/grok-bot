@@ -1,6 +1,6 @@
 import type { BuildingId } from './world';
 
-export type AgentId = 'scout' | 'hook' | 'reel' | 'post' | 'reply' | 'ledger';
+export type AgentId = 'cut' | 'hook' | 'platform' | 'archive' | 'gate' | 'dispatch';
 
 export interface AgentDef {
   id: AgentId;
@@ -12,18 +12,35 @@ export interface AgentDef {
 }
 
 export const AGENTS: AgentDef[] = [
-  { id: 'scout', name: 'scout', role: 'reads everything', color: '#2f9e6e', home: 'newsroom', shape: 'pill' },
-  { id: 'hook', name: 'hook', role: 'writes the hooks', color: '#e8344e', home: 'writers', shape: 'ghost' },
-  { id: 'reel', name: 'reel', role: 'cuts the video', color: '#f2622e', home: 'studio', shape: 'pill' },
-  { id: 'post', name: 'post', role: 'ships to timeline', color: '#6a4be0', home: 'post', shape: 'ghost' },
-  { id: 'reply', name: 'reply', role: 'talks to people', color: '#2f6fe0', home: 'cafe', shape: 'ghost' },
-  { id: 'ledger', name: 'ledger', role: 'counts everything', color: '#f0a020', home: 'bank', shape: 'tri' },
+  { id: 'cut', name: '拆镜', role: '拆开片子', color: '#3ee0ff', home: 'newsroom', shape: 'pill' },
+  { id: 'hook', name: '钩子', role: '写那一句', color: '#ff4d9a', home: 'writers', shape: 'ghost' },
+  { id: 'platform', name: '平台', role: '改成能发的尺寸', color: '#ff8a3d', home: 'studio', shape: 'pill' },
+  { id: 'archive', name: '归档', role: '让数字过夜', color: '#ffe14a', home: 'bank', shape: 'tri' },
+  { id: 'gate', name: '门卫', role: '不点头就不发', color: '#b388ff', home: 'cafe', shape: 'ghost' },
+  { id: 'dispatch', name: '发报', role: '只做模拟发出', color: '#3dffb0', home: 'post', shape: 'ghost' },
 ];
 
 export const AGENT_BY_ID = Object.fromEntries(AGENTS.map((a) => [a.id, a])) as Record<AgentId, AgentDef>;
 
-export type StageKey =
-  | 'found' | 'written' | 'edited' | 'sponsored' | 'rendered' | 'reviewed' | 'published' | 'crosspost' | 'hottake';
+export interface SeriesDoor {
+  key: string;
+  verse: string;
+  color: string;
+}
+
+export const SERIES: SeriesDoor[] = [
+  { key: '时间', verse: '影子先于光抵达', color: '#7cf6ff' },
+  { key: '因果', verse: '果子先落地，种子才想起', color: '#ff4d9a' },
+  { key: '重力', verse: '向上的楼梯也在往下拉', color: '#ff8a3d' },
+  { key: '知觉', verse: '你盯着的东西，其实在看你', color: '#b388ff' },
+  { key: '尺度', verse: '整座城缩进一粒种子', color: '#3dffb0' },
+  { key: '形体', verse: '空心之处，才装得下一座城', color: '#ffe14a' },
+  { key: '路径', verse: '每扇门都通向刚才', color: '#7aa2ff' },
+];
+
+export const PUMPKIN_LINE = '天亮前谁也别走';
+
+export type StageKey = 'found' | 'written' | 'adapted' | 'archived' | 'gated' | 'published';
 
 export interface StageDef {
   key: StageKey;
@@ -32,47 +49,27 @@ export interface StageDef {
   building: BuildingId;
   work: number;
   bubble: string;
-  gate?: 'hook' | 'hottake';
+  gate?: 'hook' | 'approval';
 }
 
 export const STAGES: StageDef[] = [
-  { key: 'found', label: 'found', agent: 'scout', building: 'newsroom', work: 4, bubble: 'reading the timeline' },
-  { key: 'written', label: 'written', agent: 'hook', building: 'writers', work: 6, bubble: 'three hooks, one wins', gate: 'hook' },
-  { key: 'edited', label: 'edited', agent: 'reel', building: 'studio', work: 5, bubble: 'cutting the reel' },
-  { key: 'sponsored', label: 'sponsored', agent: 'reply', building: 'cafe', work: 4, bubble: 'a sponsor dropped by' },
-  { key: 'rendered', label: 'rendered', agent: 'reel', building: 'studio', work: 6, bubble: '1080p, eventually' },
-  { key: 'reviewed', label: 'reviewed', agent: 'ledger', building: 'bank', work: 3, bubble: 'checking the numbers' },
-  { key: 'published', label: 'published', agent: 'post', building: 'post', work: 4, bubble: 'posting to the timeline' },
-  { key: 'crosspost', label: 'cross-post', agent: 'post', building: 'post', work: 3, bubble: 'cross-posting everywhere' },
-  { key: 'hottake', label: 'hot take', agent: 'reply', building: 'cafe', work: 4, bubble: 'brewing a hot take', gate: 'hottake' },
+  { key: 'found', label: '拆镜', agent: 'cut', building: 'newsroom', work: 3.2, bubble: '拆开今晚的时间线' },
+  { key: 'written', label: '钩子', agent: 'hook', building: 'writers', work: 3.6, bubble: '三道门，只留一道', gate: 'hook' },
+  { key: 'adapted', label: '适配', agent: 'platform', building: 'studio', work: 3.4, bubble: '改成平台的尺寸' },
+  { key: 'archived', label: '归档', agent: 'archive', building: 'bank', work: 2.6, bubble: '写进档案柜' },
+  { key: 'gated', label: '过门', agent: 'gate', building: 'cafe', work: 2.4, bubble: '天亮前谁也别走', gate: 'approval' },
+  { key: 'published', label: '发报', agent: 'dispatch', building: 'post', work: 3, bubble: '模拟发出，不真发' },
 ];
 
 const TOPICS = [
-  { title: 'a robot vacuum learned to open doors', tag: 'tech' },
-  { title: 'a city replaced parking with tiny forests', tag: 'cities' },
-  { title: 'someone ran an LLM on a pocket calculator', tag: 'ai' },
-  { title: 'the world’s slowest speedrun just finished', tag: 'games' },
-  { title: 'a bakery that only opens when it rains', tag: 'food' },
-  { title: 'a cat became mayor of a small town again', tag: 'pets' },
-  { title: 'an open-source satellite phoned home', tag: 'space' },
-  { title: 'a museum lets visitors touch everything', tag: 'culture' },
-  { title: 'a startup sells silence by the minute', tag: 'business' },
-];
-
-const HOOK_TEMPLATES = [
-  (t: string) => `nobody is talking about how ${t}.`,
-  (t: string) => `${t} — and it changes everything.`,
-  (t: string) => `I spent 3 hours on this: ${t}.`,
-  (t: string) => `wait until you see why ${t}.`,
-  (t: string) => `the internet can't stop arguing: ${t}.`,
-];
-
-const TAKES = [
-  'honestly? this is the most 2026 thing that has ever happened.',
-  'hot take: this is good, actually, and you know it.',
-  'unpopular opinion: we needed this five years ago.',
-  'this is either genius or a cry for help. maybe both.',
-  'everyone is sleeping on the real story here.',
+  { title: '借腹南瓜城：空心南瓜里亮着一整座城', tag: '形体', pumpkin: true },
+  { title: '影子比光先到门口', tag: '时间', pumpkin: false },
+  { title: '果子先落地，树还没决定', tag: '因果', pumpkin: false },
+  { title: '楼梯往上走，重力往下记', tag: '重力', pumpkin: false },
+  { title: '你看海报的时候，海报也在看你', tag: '知觉', pumpkin: false },
+  { title: '森林缩进停车位，城缩进种子', tag: '尺度', pumpkin: false },
+  { title: '七扇门，每扇都通向刚才', tag: '路径', pumpkin: false },
+  { title: '黑森林里有一盏永不长大的灯', tag: '形体', pumpkin: true },
 ];
 
 export interface Story {
@@ -80,32 +77,30 @@ export interface Story {
   title: string;
   tag: string;
   likes: number;
-  hooks: string[];
-  hookPick?: number;
-  take: string;
-  sponsor?: { name: string; fee: number };
-  takeApproved?: boolean;
+  pumpkin: boolean;
+  draft: string;
+  seriesPick?: string;
+  usedPumpkin?: boolean;
+  gateDecision?: 'approve' | 'edit' | 'decline';
+  editNote?: string;
 }
 
-const SPONSORS = ['oat milk co.', 'keyboard club', 'cloud sauna', 'tiny desk lamps', 'sock subscription', 'meal kit'];
-
-const pick = <T>(arr: T[], n: number) => arr[Math.abs(Math.floor(n)) % arr.length];
+const pick = <T,>(arr: T[], n: number) => arr[Math.abs(Math.floor(n)) % arr.length];
 
 const topicOffset = Math.floor(Math.random() * TOPICS.length);
 
 export function makeStory(id: number): Story {
   const topic = TOPICS[(topicOffset + id) % TOPICS.length];
-  const start = Math.floor(Math.random() * HOOK_TEMPLATES.length);
+  const door = pick(SERIES, id * 3 + 1);
+  const draft = topic.pumpkin
+    ? `${PUMPKIN_LINE}。空心南瓜里亮着一座城，进去就是进去。`
+    : `${door.key}：${door.verse}。今晚就讲「${topic.title}」。`;
   return {
     id,
     title: topic.title,
     tag: topic.tag,
     likes: Math.round(4 + Math.random() * 40) * 1000,
-    hooks: [0, 1, 2].map((k) => pick(HOOK_TEMPLATES, start + k)(topic.title)),
-    take: pick(TAKES, id + Math.random() * 5),
+    pumpkin: topic.pumpkin,
+    draft,
   };
-}
-
-export function makeSponsor() {
-  return { name: pick(SPONSORS, Math.random() * 100), fee: Math.round(40 + Math.random() * 160) };
 }

@@ -1,11 +1,10 @@
 import { useCallback, useRef, useState, type PointerEvent } from 'react';
 import { AgentCards } from './components/AgentCards';
 import { CameraControls } from './components/CameraControls';
-import { Header, StatsStrip } from './components/Chrome';
+import { Header } from './components/Chrome';
 import { LeftPanel, RightPanel } from './components/Panels';
 import { SummaryModal } from './components/SummaryModal';
 import { City } from './components/city/City';
-import { nightAt, weatherAt } from './game/sim';
 import { SimContext, useSim, useSimInstance } from './game/useSim';
 import type { Pt } from './game/iso';
 
@@ -47,32 +46,23 @@ function Dashboard() {
     drag.current = null;
   };
 
-  const night = nightAt(sim.state.clock);
-  const { weather } = weatherAt(sim.state.clock);
-
   return (
     <div className="app">
       <Header />
       <main className="stage-area">
         <div
-          className={`city-wrap weather-${weather}`}
+          className="city-wrap"
           onPointerDown={onDown}
           onPointerMove={onMove}
           onPointerUp={onUp}
           onPointerCancel={onUp}
         >
-          <div className="clouds" aria-hidden>
-            <span className="cloud c1" />
-            <span className="cloud c2" />
-            <span className="cloud c3" />
-          </div>
-          <div className="night" style={{ opacity: night * 0.5 }} aria-hidden />
+          <div className="stars" aria-hidden />
+          <div className="vignette" aria-hidden />
           <City rot={rot} zoom={ZOOMS[zoomIdx]} pan={pan} labels={labels} />
-          {weather === 'rain' && <div className="rain" aria-hidden />}
         </div>
         <LeftPanel />
         <RightPanel />
-        <StatsStrip />
         <CameraControls
           onReset={reset}
           onRotate={(d) => setRot((r) => (r + d + 4) % 4)}
