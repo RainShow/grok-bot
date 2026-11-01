@@ -84,14 +84,14 @@ export const BILLBOARD = { x0: 5.4, x1: 6.9, y: 6.1 };
 export const HUB = { x: 7.15, y: 7.15 };
 export const PUMPKIN = { x: 6.55, y: 6.55 };
 
-export const SERIES_GATES: { name: string; color: string; x: number; y: number }[] = [
-  { name: '时间', color: '#7cf6ff', x: 4.62, y: 5.55 },
-  { name: '因果', color: '#ff4d9a', x: 5.55, y: 4.62 },
-  { name: '重力', color: '#ff8a3d', x: 7.45, y: 4.62 },
-  { name: '知觉', color: '#b388ff', x: 8.38, y: 5.55 },
-  { name: '尺度', color: '#3dffb0', x: 4.62, y: 7.45 },
-  { name: '形体', color: '#ffe14a', x: 6.5, y: 8.38 },
-  { name: '路径', color: '#7aa2ff', x: 8.38, y: 7.45 },
+export const SERIES_GATES: { id: 'time' | 'cause' | 'gravity' | 'sense' | 'scale' | 'form' | 'path'; color: string; x: number; y: number }[] = [
+  { id: 'time', color: '#7cf6ff', x: 4.62, y: 5.55 },
+  { id: 'cause', color: '#ff4d9a', x: 5.55, y: 4.62 },
+  { id: 'gravity', color: '#ff8a3d', x: 7.45, y: 4.62 },
+  { id: 'sense', color: '#b388ff', x: 8.38, y: 5.55 },
+  { id: 'scale', color: '#3dffb0', x: 4.62, y: 7.45 },
+  { id: 'form', color: '#ffe14a', x: 6.5, y: 8.38 },
+  { id: 'path', color: '#7aa2ff', x: 8.38, y: 7.45 },
 ];
 
 export const CONVEYORS: [number, number][][] = [

@@ -1,4 +1,5 @@
-import { AGENTS, AGENT_BY_ID, PUMPKIN_LINE, SERIES, STAGES, makeStory, type AgentId, type Story } from './data';
+import type { Phrase } from '../i18n/copy';
+import { AGENTS, AGENT_BY_ID, SERIES, STAGES, makeStory, type AgentId, type Story } from './data';
 import { BUILDINGS, BUILDING_BY_ID, findPath, type BuildingId, type Tile } from './world';
 
 export type TaskKind = 'stage' | 'scan' | 'count' | 'wander' | 'handoff';
@@ -8,7 +9,7 @@ export interface Task {
   building: BuildingId;
   work: number;
   left: number;
-  status: string;
+  status: Phrase;
   storyId?: number;
 }
 
@@ -20,7 +21,7 @@ export interface AgentState {
   pos: number;
   task: Task | null;
   waiting: boolean;
-  status: string;
+  status: Phrase;
   idleFor: number;
   doneToday: number;
   carrying: string | null;
@@ -32,10 +33,6 @@ export interface Prompt {
   id: number;
   kind: 'hook' | 'approval';
   storyId: number;
-  title: string;
-  detail?: string;
-  quote?: string;
-  note?: string;
   ttl: number;
   total: number;
 }
@@ -44,7 +41,7 @@ export interface LogEntry {
   id: number;
   clock: number;
   who: AgentId | 'you' | 'city';
-  text: string;
+  text: Phrase;
 }
 
 export interface Metrics {
@@ -83,7 +80,7 @@ export interface SimState {
   history: number[];
   ended: boolean;
   summaryOpen: boolean;
-  activeBubble: { building: BuildingId; text: string; agent: AgentId } | null;
+  activeBubble: { building: BuildingId; text: Phrase; agent: AgentId } | null;
   storyFromQueue: boolean;
   wrapIn: number;
 }
@@ -131,7 +128,7 @@ export class Sim {
     const h = opts.startHour;
     this.startClock = h !== undefined && h >= 0 && h < 24 ? h * 60 : START_CLOCK;
     this.state = this.initial();
-    this.log('city', '夜班开始。不可思议之城亮了。');
+    this.log('city', { id: 'boot' });
   }
 
   private initial(): SimState {
@@ -140,7 +137,7 @@ export class Sim {
       const door = BUILDING_BY_ID[a.home].door;
       agents[a.id] = {
         id: a.id, at: a.home, tile: door, path: null, pos: 0, task: null, waiting: false,
-        status: '到岗', idleFor: rand(0.6, 2.2), doneToday: 0, carrying: null,
+        status: { id: 'clockIn' }, idleFor: rand(0.6, 2.2), doneToday: 0, carrying: null,
       };
     }
     return {
@@ -189,7 +186,7 @@ export class Sim {
   wrapDay() {
     this.state.ended = true;
     this.state.summaryOpen = true;
-    this.log('city', '夜班收工，汇总在这儿');
+    this.log('city', { id: 'wrap' });
     this.publish();
   }
   openSummary() {
@@ -202,7 +199,7 @@ export class Sim {
   }
   restart() {
     this.state = this.initial();
-    this.log('city', '又一个夜班。灯重新亮了。');
+    this.log('city', { id: 'restart' });
     this.publish();
   }
 
@@ -217,34 +214,34 @@ export class Sim {
     if (p.kind === 'hook') {
       if (choice >= SERIES.length) {
         story.usedPumpkin = true;
-        story.seriesPick = '形体';
+        story.seriesPick = 'form';
         s.metrics.pumpkinPicked++;
         s.metrics.viewRate += rand(80, 140);
-        this.log(auto ? 'city' : 'you', auto ? '没人应，借腹南瓜城的钩子自己亮了' : `你批准了借腹南瓜城：${PUMPKIN_LINE}`);
+        this.log(auto ? 'city' : 'you', auto ? { id: 'pumpkinAuto' } : { id: 'pumpkinYou' });
       } else {
         const door = SERIES[Math.max(0, choice)];
-        story.seriesPick = door.key;
-        this.log(auto ? 'city' : 'you', auto ? `没人应，自动选了「${door.key}」` : `你选了「${door.key}」：${door.verse}`);
+        story.seriesPick = door.id;
+        this.log(auto ? 'city' : 'you', auto ? { id: 'seriesAuto', series: door.id } : { id: 'seriesYou', series: door.id });
       }
       s.metrics.hooksPicked++;
       if (!auto) s.metrics.hooksByYou++;
     } else if (choice === 2) {
       story.gateDecision = 'decline';
       s.metrics.declined++;
-      this.log(auto ? 'city' : 'you', '拒绝了。这条留在城里，不会发出去。');
+      this.log(auto ? 'city' : 'you', { id: 'declined' });
     } else if (choice === 1) {
       story.gateDecision = 'edit';
-      story.editNote = note?.trim() || story.draft;
+      story.editNote = note?.trim() || story.editNote;
       s.metrics.edited++;
       s.metrics.followers += Math.round(rand(8, 24));
       s.metrics.viewRate += rand(30, 70);
-      this.log('you', '改了一句。门卫放行，仍然只是模拟。');
+      this.log('you', { id: 'edited' });
     } else {
       story.gateDecision = 'approve';
       s.metrics.approved++;
       s.metrics.followers += Math.round(rand(18, 50));
       s.metrics.viewRate += rand(60, 120);
-      this.log('you', '门卫放行。发报只做模拟，不会真的投稿。');
+      this.log('you', { id: 'approved' });
     }
     const agent = s.agents[STAGES[s.stageIdx].agent];
     agent.waiting = false;
@@ -278,7 +275,7 @@ export class Sim {
     }
   }
 
-  private log(who: LogEntry['who'], text: string) {
+  private log(who: LogEntry['who'], text: Phrase) {
     const s = this.state;
     s.log.unshift({ id: ++this.logId, clock: s.clock, who, text });
     if (s.log.length > 80) s.log.length = 80;
@@ -325,11 +322,11 @@ export class Sim {
     if (s.stagePhase === 'travel') {
       if (agent.task?.kind !== 'stage') {
         const work = stage.key === 'found' && s.storyFromQueue ? 1.6 : stage.work;
-        this.assign(agent, { kind: 'stage', building: stage.building, work, left: work, status: stage.bubble, storyId: s.story.id });
+        this.assign(agent, { kind: 'stage', building: stage.building, work, left: work, status: { id: 'stage', stage: stage.key }, storyId: s.story.id });
       }
       if (agent.at === stage.building && !agent.path) {
         s.stagePhase = 'work';
-        s.activeBubble = { building: stage.building, text: stage.bubble, agent: stage.agent };
+        s.activeBubble = { building: stage.building, text: { id: 'stage', stage: stage.key }, agent: stage.agent };
         this.changed();
       }
     }
@@ -344,53 +341,43 @@ export class Sim {
     agent.doneToday++;
     switch (stage.key) {
       case 'found':
-        this.log('cut', `拆开「${story.title}」`);
+        this.log('cut', { id: 'found', topic: story.topic });
         break;
       case 'written':
-        this.log('hook', '钩子写好了，等你选一道门');
+        this.log('hook', { id: 'hooksReady' });
         break;
       case 'adapted':
-        this.log('platform', '改成竖屏，字幕压短');
+        this.log('platform', { id: 'adapted' });
         break;
       case 'archived':
-        this.log('archive', '归档编号写好了');
+        this.log('archive', { id: 'archived' });
         break;
       case 'gated':
-        this.log('gate', '拦在门口：批准才发');
+        this.log('gate', { id: 'gated' });
         break;
       case 'published':
         if (story.gateDecision === 'decline') {
-          this.log('dispatch', '门卫没放行，这条留在内部档');
+          this.log('dispatch', { id: 'held' });
         } else {
           s.metrics.posts++;
           s.metrics.viewRate += rand(120, 220);
           s.metrics.shares += rand(6, 18);
-          this.log('dispatch', `模拟发出第 ${s.metrics.posts} 条。没有真的投稿。`);
+          this.log('dispatch', { id: 'published', n: s.metrics.posts });
         }
         break;
     }
     if (stage.gate) {
       agent.waiting = true;
-      agent.status = '等你拍板';
+      agent.status = { id: 'waiting' };
       s.stagePhase = 'gate';
-      s.activeBubble = { building: stage.building, text: '需要你', agent: stage.agent };
-      const p: Prompt = stage.gate === 'hook'
-        ? {
-            id: ++this.promptId, kind: 'hook', storyId: story.id,
-            title: '今晚主打哪一道门？',
-            detail: story.title,
-            quote: story.draft,
-            ttl: PROMPT_TTL, total: PROMPT_TTL,
-          }
-        : {
-            id: ++this.promptId, kind: 'approval', storyId: story.id,
-            title: '发报前，门卫要你点头',
-            detail: story.seriesPick ? `主打「${story.seriesPick}」${story.usedPumpkin ? ' · 借腹南瓜城' : ''}` : '主打还没写上',
-            quote: story.editNote || story.draft,
-            note: '模拟审批。点批准也不会发到站外。',
-            ttl: -1, total: 1,
-          };
-      s.prompts.push(p);
+      s.activeBubble = { building: stage.building, text: { id: 'needsYou' }, agent: stage.agent };
+      s.prompts.push({
+        id: ++this.promptId,
+        kind: stage.gate === 'hook' ? 'hook' : 'approval',
+        storyId: story.id,
+        ttl: stage.gate === 'hook' ? PROMPT_TTL : -1,
+        total: stage.gate === 'hook' ? PROMPT_TTL : 1,
+      });
     } else {
       this.advanceStage();
     }
@@ -411,22 +398,21 @@ export class Sim {
     if (prev.agent !== next.agent && prev.building !== next.building) {
       const carrier = s.agents[prev.agent];
       carrier.carrying = next.agent;
-      const nextName = AGENT_BY_ID[next.agent].name;
-      this.assign(carrier, { kind: 'handoff', building: next.building, work: 1, left: 1, status: `把稿子送到${nextName}` });
-      s.activeBubble = { building: next.building, text: `送到${nextName}`, agent: prev.agent };
+      this.assign(carrier, { kind: 'handoff', building: next.building, work: 1, left: 1, status: { id: 'handoff', agent: next.agent } });
+      s.activeBubble = { building: next.building, text: { id: 'toAgent', agent: next.agent }, agent: prev.agent };
     }
   }
 
   private finishStory() {
     const s = this.state;
     const story = s.story!;
-    this.log('city', `「${story.title}」走完这条夜班街`);
+    this.log('city', { id: 'doneStreet', topic: story.topic });
     s.story = null;
     s.activeBubble = null;
     const archive = s.agents.archive;
-    this.assign(archive, { kind: 'count', building: 'bank', work: 2.4, left: 2.4, status: '清点今晚的分享' });
+    this.assign(archive, { kind: 'count', building: 'bank', work: 2.4, left: 2.4, status: { id: 'countJob' } });
     if (s.metrics.posts >= POSTS_PER_DAY) {
-      this.log('city', '六条额度满了。准备收班。');
+      this.log('city', { id: 'quota' });
       s.wrapIn = 4;
     }
   }
@@ -434,7 +420,7 @@ export class Sim {
   private assign(a: AgentState, task: Task) {
     a.task = task;
     if (task.kind !== 'handoff') a.carrying = null;
-    a.status = task.kind === 'stage' && a.at !== task.building ? `前往${BUILDING_BY_ID[task.building].name}` : task.status;
+    a.status = task.kind === 'stage' && a.at !== task.building ? { id: 'goto', building: task.building } : task.status;
     if (a.at !== task.building) this.walk(a, task.building);
     this.changed();
   }
@@ -471,7 +457,7 @@ export class Sim {
         const t = a.task;
         a.task = null;
         a.idleFor = rand(1.5, 4);
-        a.status = '空闲';
+        a.status = { id: 'idle' };
         this.finishTask(a, t);
       }
       return;
@@ -493,12 +479,12 @@ export class Sim {
         if (s.queue.length < 3 && s.metrics.posts + s.queue.length < POSTS_PER_DAY) {
           const story = makeStory(s.nextStoryId++);
           s.queue.push(story);
-          this.log('cut', `先夹住「${story.title}」`);
+          this.log('cut', { id: 'bookmark', topic: story.topic });
         }
         break;
       }
       case 'count':
-        this.log('archive', `清点完毕：浏览 ${Math.round(s.metrics.views)}，分享 ${Math.round(s.metrics.shares)}`);
+        this.log('archive', { id: 'counted', views: Math.round(s.metrics.views), shares: Math.round(s.metrics.shares) });
         break;
       case 'handoff':
         a.carrying = null;
@@ -512,18 +498,18 @@ export class Sim {
   private pickIdleTask(a: AgentState) {
     const s = this.state;
     if (a.id === 'cut' && s.queue.length < 2 && s.metrics.posts + s.queue.length < POSTS_PER_DAY) {
-      this.assign(a, { kind: 'scan', building: 'newsroom', work: 5, left: 5, status: '翻时间线' });
+      this.assign(a, { kind: 'scan', building: 'newsroom', work: 5, left: 5, status: { id: 'scan' } });
       return;
     }
     const home = AGENT_BY_ID[a.id].home;
-    const options: { b: BuildingId; status: string }[] = [
-      { b: 'cafe', status: '在门卫亭门口等' },
-      { b: home, status: '回到自己的楼' },
-      { b: 'newsroom', status: '偷看时间线' },
-      { b: 'studio', status: '看平台成片' },
-      { b: 'bank', status: '翻档案' },
-      { b: 'writers', status: '偷一句钩子' },
-      { b: 'post', status: '看发报队列' },
+    const options: { b: BuildingId; status: Phrase }[] = [
+      { b: 'cafe', status: { id: 'wander', spot: 'gate' } },
+      { b: home, status: { id: 'wander', spot: 'home' } },
+      { b: 'newsroom', status: { id: 'wander', spot: 'peek' } },
+      { b: 'studio', status: { id: 'wander', spot: 'dailies' } },
+      { b: 'bank', status: { id: 'wander', spot: 'files' } },
+      { b: 'writers', status: { id: 'wander', spot: 'steal' } },
+      { b: 'post', status: { id: 'wander', spot: 'queue' } },
     ];
     const choice = Math.random() < 0.5 ? options[Math.floor(Math.random() * 2)] : options[Math.floor(Math.random() * options.length)];
     const work = rand(2.5, 5.5);

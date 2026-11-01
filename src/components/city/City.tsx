@@ -1,13 +1,15 @@
 import { memo, useMemo, type ReactNode } from 'react';
-import { AGENTS, AGENT_BY_ID, type AgentDef } from '../../game/data';
+import { AGENTS, type AgentDef } from '../../game/data';
 import { N, P, proj, pts, rotPt, rotRect, shade, type Pt } from '../../game/iso';
 import { agentMode, nightAt, type AgentState } from '../../game/sim';
 import { useSim, useSimFrame } from '../../game/useSim';
 import {
-  BILLBOARD, BUILDINGS, CONVEYORS, FILLERS, LAMPS, PUMPKIN, SERIES_GATES, TREES, isPlaza, isRoad, type Building,
+  BILLBOARD, BUILDINGS, CONVEYORS, FILLERS, LAMPS, PUMPKIN, SERIES_GATES, TREES, isPlaza, isRoad, type Building, type BuildingId,
 } from '../../game/world';
 import { Lamp, StructureView, Tree } from './structures';
 import { formatCompact } from '../../format';
+import { agentName, buildingName, buildingTag, say, seriesName, signFor } from '../../i18n/copy';
+import { useI18n } from '../../i18n/lang';
 
 const INK = '#090612';
 
@@ -20,6 +22,7 @@ export interface CityProps {
 
 export function City({ rot, zoom, pan, labels }: CityProps) {
   const sim = useSim();
+  const { t } = useI18n();
   const night = Math.round(nightAt(sim.state.clock) * 10) / 10;
   return (
     <svg className="city-svg" viewBox="-560 -228 1120 745" preserveAspectRatio="xMidYMid meet">
@@ -44,7 +47,7 @@ export function City({ rot, zoom, pan, labels }: CityProps) {
         <g className="blimp">
           <ellipse cx={210} cy={-150} rx={40} ry={15} fill="#1a1430" stroke="#b388ff" strokeWidth={1.4} />
           <path d="M-8,-136 h16 l-8,8 z" transform="translate(210 0)" fill="#ff4d9a" />
-          <text x={210} y={-146} textAnchor="middle" className="blimp-text">夜班</text>
+          <text x={210} y={-146} textAnchor="middle" className="blimp-text">{t.blimp}</text>
         </g>
         <Dynamic rot={rot} labels={labels} />
       </g>
@@ -53,6 +56,7 @@ export function City({ rot, zoom, pan, labels }: CityProps) {
 }
 
 const StaticCity = memo(function StaticCity({ rot, night }: { rot: number; night: number }) {
+  const { lang } = useI18n();
   const ground = useMemo(() => {
     const out: ReactNode[] = [];
     const corners = [P(0, 0, 0, rot), P(N, 0, 0, rot), P(N, N, 0, rot), P(0, N, 0, rot)];
@@ -115,7 +119,8 @@ const StaticCity = memo(function StaticCity({ rot, night }: { rot: number; night
     const items: { d: number; el: ReactNode }[] = [];
     for (const s of [...BUILDINGS, ...FILLERS]) {
       const r = rotRect(s.x0, s.y0, s.x1, s.y1, rot);
-      items.push({ d: (r.x0 + r.x1 + r.y0 + r.y1) / 2, el: <StructureView key={s.id} s={s} rot={rot} night={night} /> });
+      const signed = s.id in signMap ? { ...s, sign: signFor(lang, s.id as BuildingId) } : s;
+      items.push({ d: (r.x0 + r.x1 + r.y0 + r.y1) / 2, el: <StructureView key={s.id} s={signed} rot={rot} night={night} /> });
     }
     TREES.forEach(([x, y], i) => {
       const [a, b] = rotPt(x, y, rot);
@@ -126,15 +131,15 @@ const StaticCity = memo(function StaticCity({ rot, night }: { rot: number; night
       items.push({ d: a + b, el: <Lamp key={`l${i}`} x={a} y={b} lit={lit} /> });
     });
     const [px, py] = rotPt(PUMPKIN.x, PUMPKIN.y, rot);
-    items.push({ d: px + py + 0.4, el: <Pumpkin key="pumpkin" x={px} y={py} /> });
+    items.push({ d: px + py + 0.4, el: <Pumpkin key="pumpkin" x={px} y={py} gloss={lang === 'en' ? 'Borrowed-Belly Pumpkin City' : ''} /> });
     SERIES_GATES.forEach((g, i) => {
       const [a, b] = rotPt(g.x, g.y, rot);
-      items.push({ d: a + b - 0.15, el: <SeriesDoor key={g.name} x={a} y={b} name={g.name} color={g.color} i={i} /> });
+      items.push({ d: a + b - 0.15, el: <SeriesDoor key={g.id} x={a} y={b} name={seriesName(lang, g.id)} color={g.color} i={i} /> });
     });
     const [cx, cy] = rotPt(3.55, 4.85, rot);
     items.push({ d: cx + cy, el: <Crane key="crane" x={cx} y={cy} /> });
     return items.sort((a, b) => a.d - b.d).map((i) => i.el);
-  }, [rot, night]);
+  }, [rot, night, lang]);
 
   return (
     <g>
@@ -145,7 +150,9 @@ const StaticCity = memo(function StaticCity({ rot, night }: { rot: number; night
   );
 });
 
-function Pumpkin({ x, y }: { x: number; y: number }) {
+const signMap: Record<BuildingId, true> = { newsroom: true, writers: true, post: true, studio: true, bank: true, cafe: true };
+
+function Pumpkin({ x, y, gloss }: { x: number; y: number; gloss?: string }) {
   const p = proj(x, y, 0);
   return (
     <g transform={`translate(${p.x} ${p.y})`} className="pumpkin">
@@ -166,6 +173,7 @@ function Pumpkin({ x, y }: { x: number; y: number }) {
       <rect x={3} y={-26} width={5} height={5} fill="#ffe14a" />
       <rect x={-4} y={-16} width={8} height={5} fill="#ff4d9a" className="blink" />
       <text y={22} textAnchor="middle" className="pumpkin-label">借腹南瓜城</text>
+      {gloss && <text y={36} textAnchor="middle" className="pumpkin-gloss">{gloss}</text>}
     </g>
   );
 }
@@ -237,6 +245,7 @@ function Conveyors({ rot }: { rot: number }) {
 
 function Billboard({ rot }: { rot: number }) {
   const sim = useSim();
+  const { t } = useI18n();
   let a = P(BILLBOARD.x0, BILLBOARD.y, 0, rot);
   let b = P(BILLBOARD.x1, BILLBOARD.y, 0, rot);
   if (b.x < a.x) [a, b] = [b, a];
@@ -253,7 +262,7 @@ function Billboard({ rot }: { rot: number }) {
       <line x1={b.x - 8} y1={b.y} x2={b.x - 8} y2={b.y - z0} stroke={INK} strokeWidth={2.5} />
       <polygon points={pts(panel)} fill="#120c22" stroke="#7cf6ff" strokeWidth={1.6} />
       <g transform={`translate(${a.x} ${a.y - z0 - hgt}) matrix(1 ${k} 0 1 0 0)`}>
-        <text x={w / 2} y={20} textAnchor="middle" className="bb-label">浏览</text>
+        <text x={w / 2} y={20} textAnchor="middle" className="bb-label">{t.viewsBoard}</text>
         <text x={w / 2} y={45} textAnchor="middle" className="bb-value">{formatCompact(sim.state.metrics.views)}</text>
       </g>
     </g>
@@ -312,8 +321,13 @@ function Bot({ def, mode }: { def: AgentDef; mode: string }) {
   );
 }
 
+function textWidth(text: string, lang: string) {
+  return lang === 'zh' ? [...text].length * 13 + 28 : text.length * 6.4 + 28;
+}
+
 function Dynamic({ rot, labels }: { rot: number; labels: boolean }) {
   const sim = useSimFrame();
+  const { lang } = useI18n();
   const s = sim.state;
   const t = s.real;
   const positions = AGENTS.map((d, i) => ({ d, a: s.agents[d.id], ...agentScreen(s.agents[d.id], rot, t, i) }));
@@ -337,15 +351,16 @@ function Dynamic({ rot, labels }: { rot: number; labels: boolean }) {
   if (bubble) {
     const b = BUILDINGS.find((x) => x.id === bubble.building)!;
     const dp = P(b.door[0] + 0.5, b.door[1] + 0.5, 0, rot);
-    const needs = bubble.text === '需要你';
-    const w = [...bubble.text].length * 13 + 28;
+    const bubbleText = say(lang, bubble.text);
+    const needs = bubble.text.id === 'needsYou';
+    const w = textWidth(bubbleText, lang);
     const fill = needs ? '#ff8a3d' : '#161226';
     bubbleEl = (
       <g transform={`translate(${dp.x} ${dp.y - 78})`} className={needs ? 'bubble pulse' : 'bubble'}>
         <rect x={-w / 2} y={-14} width={w} height={26} rx={6} fill={fill} stroke={needs ? '#ffd0a8' : '#7cf6ff'} strokeWidth={1.3} />
         <path d={`M-6,12 L0,20 L6,12`} fill={fill} stroke={needs ? '#ffd0a8' : '#7cf6ff'} strokeWidth={1.3} />
         <line x1={-5} y1={12} x2={5} y2={12} stroke={fill} strokeWidth={2} />
-        <text x={0} y={2} textAnchor="middle" className="bubble-text">{bubble.text}</text>
+        <text x={0} y={2} textAnchor="middle" className="bubble-text">{bubbleText}</text>
       </g>
     );
   }
@@ -358,7 +373,8 @@ function Dynamic({ rot, labels }: { rot: number; labels: boolean }) {
         .sort((a, b) => a.y - b.y)
         .map(({ d, a, x, y, hop }) => {
           const mode = agentMode(a);
-          const w = [...d.name].length * 14 + 28;
+          const name = agentName(lang, d.id);
+          const w = lang === 'zh' ? [...name].length * 14 + 28 : name.length * 7.2 + 28;
           return (
             <g key={d.id} transform={`translate(${x.toFixed(1)} ${y.toFixed(1)})`} className={`agent agent-${mode}`}>
               <g transform={`translate(0 ${-hop})`}>
@@ -381,7 +397,7 @@ function Dynamic({ rot, labels }: { rot: number; labels: boolean }) {
                 <g transform={`translate(0 ${a.carrying ? -66 : -50})`}>
                   <rect x={-w / 2} y={-9} width={w} height={17} rx={8} fill="#120e1e" stroke={d.color} strokeWidth={1.2} />
                   <circle cx={-w / 2 + 9} cy={-0.5} r={3.5} fill={d.color} />
-                  <text x={-w / 2 + 17} y={3.5} className="nametag">{d.name}</text>
+                  <text x={-w / 2 + 17} y={3.5} className="nametag">{name}</text>
                 </g>
               )}
             </g>
@@ -395,12 +411,13 @@ function Dynamic({ rot, labels }: { rot: number; labels: boolean }) {
 
 function Callout({ b, rot }: { b: Building; rot: number }) {
   const sim = useSim();
+  const { lang, t } = useI18n();
   const s = sim.state;
   const r = rotRect(b.x0, b.y0, b.x1, b.y1, rot);
   const extra = b.kind === 'house' ? 44 : b.kind === 'bank' ? 28 : 10;
   const anchor = proj((r.x0 + r.x1) / 2, (r.y0 + r.y1) / 2, b.h + extra);
   const ground = proj((r.x0 + r.x1) / 2, (r.y0 + r.y1) / 2, 0);
-  const w = 168;
+  const w = lang === 'zh' ? 168 : 196;
   const ang = Math.atan2((ground.y - 208) * 2, ground.x);
   const c = Math.cos(ang);
   let bx: number;
@@ -418,12 +435,14 @@ function Callout({ b, rot }: { b: Building; rot: number }) {
   const working = here.find((d) => agentMode(s.agents[d.id]) === 'working');
   const waiting = here.find((d) => agentMode(s.agents[d.id]) === 'waiting');
   const statusAgent = waiting ?? working;
-  const status = waiting ? '需要你' : working ? s.agents[working.id].status : here.length ? `${here.length} 人在内` : '安静';
+  const status = waiting ? say(lang, { id: 'needsYou' }) : working ? say(lang, s.agents[working.id].status) : here.length ? say(lang, { id: 'inside', n: here.length }) : say(lang, { id: 'quiet' });
   const dot = waiting ? '#ff8a3d' : working ? '#3dffb0' : '#6a6488';
   const elbowX = anchor.x < bx ? bx : anchor.x > bx + w ? bx + w : anchor.x;
   const elbowY = anchor.x >= bx && anchor.x <= bx + w ? by + 66 : by + 13;
-  const pillText = `${statusAgent ? AGENT_BY_ID[statusAgent.id].name + ' · ' : ''}${status}`.slice(0, 16);
-  const pw = [...pillText].length * 11 + 24;
+  const who = statusAgent ? agentName(lang, statusAgent.id) : '';
+  const full = `${who ? who + ' · ' : ''}${status}`;
+  const pillText = lang === 'zh' ? [...full].slice(0, 16).join('') : full.slice(0, 34);
+  const pw = (lang === 'zh' ? [...pillText].length * 11 : pillText.length * 6.2) + 24;
   return (
     <g className="callout">
       <polyline points={`${anchor.x},${anchor.y} ${anchor.x},${elbowY} ${elbowX},${elbowY}`} fill="none" stroke="#7cf6ff" strokeWidth={1.2} opacity={0.8} />
@@ -431,9 +450,9 @@ function Callout({ b, rot }: { b: Building; rot: number }) {
       <g transform={`translate(${bx} ${by})`}>
         <rect x={0} y={0} width={w} height={26} rx={4} fill="#120e1ee6" stroke="#3d3470" strokeWidth={1.2} />
         <circle cx={w / 2} cy={0} r={4.5} fill="#120e1e" stroke="#7cf6ff" strokeWidth={1.2} />
-        <text x={5} y={8} className="callout-no">no. {b.no}</text>
-        <text x={w / 2} y={20} textAnchor="middle" className="callout-name">{b.name}</text>
-        <text x={w / 2} y={40} textAnchor="middle" className="callout-tag">{b.tagline}</text>
+        <text x={5} y={8} className="callout-no">{t.noLabel} {b.no}</text>
+        <text x={w / 2} y={20} textAnchor="middle" className="callout-name">{buildingName(lang, b.id)}</text>
+        <text x={w / 2} y={40} textAnchor="middle" className="callout-tag">{buildingTag(lang, b.id)}</text>
         <g transform={`translate(${(w - pw) / 2} 48)`} className={waiting ? 'pulse' : undefined}>
           <rect width={pw} height={16} rx={8} fill="#1a1433" stroke="#3d3470" strokeWidth={1} />
           <circle cx={9} cy={8} r={3.2} fill={dot} />

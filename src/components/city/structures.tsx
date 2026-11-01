@@ -67,6 +67,11 @@ function pyramidRoof(r: Rect, h: number, rise: number, color: string) {
   );
 }
 
+function signWidth(sign: string) {
+  const latin = /^[\x00-\x7F]+$/.test(sign);
+  return sign.length * (latin ? 7.6 : 14) + 12;
+}
+
 function door(r: Rect, face: Face, u: number, w: number, hgt: number, color = '#6b4a3a') {
   return <polygon points={pts(faceQuad(r, face, u - w / 2, u + w / 2, 0, hgt))} fill={color} stroke={INK} strokeWidth={1.2} />;
 }
@@ -97,7 +102,7 @@ export function StructureView({ s, rot, night }: { s: Structure | Building; rot:
       if (sign) {
         parts.push(
           <g key="sign" transform={faceText(r, 'left', 0.1, h - 2)}>
-            <rect x={0} y={0} width={sign.length * 14 + 12} height={14} fill="#120e1c" stroke="#7cf6ff" strokeWidth={1} />
+            <rect x={0} y={0} width={signWidth(sign)} height={14} fill="#120e1c" stroke="#7cf6ff" strokeWidth={1} />
             <text x={5} y={10} className="iso-sign">{sign}</text>
           </g>,
         );
@@ -147,7 +152,7 @@ export function StructureView({ s, rot, night }: { s: Structure | Building; rot:
       if (sign) {
         parts.push(
           <g key="sign" transform={faceText(r, 'left', 0.12, h - 6)}>
-            <rect x={0} y={0} width={sign.length * 14 + 12} height={14} fill="#120e1c" stroke="#7cf6ff" strokeWidth={1} />
+            <rect x={0} y={0} width={signWidth(sign)} height={14} fill="#120e1c" stroke="#7cf6ff" strokeWidth={1} />
             <text x={5} y={10} className="iso-sign">{sign}</text>
           </g>,
         );
