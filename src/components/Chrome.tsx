@@ -1,6 +1,8 @@
 import { useEffect, useState, type RefObject } from 'react';
 import { SERIES } from '../game/data';
+import { fleetCounts } from '../game/fleet';
 import { POSTS_PER_DAY, weatherAt } from '../game/sim';
+import { useFleet } from '../game/useFleet';
 import { useSim } from '../game/useSim';
 import { formatClock, formatElapsed } from '../format';
 import { seriesName, seriesVerse } from '../i18n/copy';
@@ -10,9 +12,12 @@ const SPEEDS = [1, 2, 4];
 
 export function Header() {
   const sim = useSim();
+  const fleet = useFleet();
   const { lang, t, toggle } = useI18n();
   const s = sim.state;
   const needs = s.prompts.length;
+  const { online, total } = fleetCounts(fleet);
+  const fleetNote = fleet.source === 'sample' ? t.fleetSample : t.fleetSource(fleet.source);
   const verse = SERIES[Math.floor(s.real / 7) % SERIES.length];
   return (
     <header className="header">
@@ -33,9 +38,11 @@ export function Header() {
         </div>
       </div>
       <div className="header-pills">
-        <div className="pill">
+        <div className="pill" data-testid="bots-online" title={fleetNote}>
           <span className="pill-l">{t.online}</span>
-          <b>6/6</b>
+          <b>
+            {online}/{total}
+          </b>
         </div>
         <div className="pill">
           <span className="pill-l">{t.done}</span>

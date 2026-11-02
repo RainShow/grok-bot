@@ -64,12 +64,12 @@ const TOPIC_COPY: Record<TopicId, { zh: string; en: string }> = {
 };
 
 const AGENT_COPY: Record<AgentId, { zh: string; en: string; roleZh: string; roleEn: string }> = {
-  cut: { zh: '拆镜', en: 'Cut', roleZh: '拆开片子', roleEn: 'Opens the clip' },
-  hook: { zh: '钩子', en: 'Hook', roleZh: '写那一句', roleEn: 'Writes the line' },
-  platform: { zh: '平台', en: 'Platform', roleZh: '改成能发的尺寸', roleEn: 'Fits the feed' },
-  archive: { zh: '归档', en: 'Archive', roleZh: '让数字过夜', roleEn: 'Files the numbers' },
-  gate: { zh: '门卫', en: 'Gate', roleZh: '不点头就不发', roleEn: 'No yes, no send' },
-  dispatch: { zh: '发报', en: 'Dispatch', roleZh: '只做模拟发出', roleEn: 'Simulated send only' },
+  proto: { zh: 'proto', en: 'proto', roleZh: '想法 → draft PR', roleEn: 'Idea → draft PR' },
+  pumpkin: { zh: 'pumpkin', en: 'pumpkin', roleZh: '内容/发帖准备', roleEn: 'Content and post prep' },
+  analysis: { zh: 'analysis', en: 'analysis', roleZh: '晨间 digest', roleEn: 'Morning digest' },
+  grok: { zh: 'Grok', en: 'Grok', roleZh: '主协调', roleEn: 'Lead coordinator' },
+  design: { zh: 'design', en: 'design', roleZh: '设计', roleEn: 'Design' },
+  post: { zh: 'post', en: 'post', roleZh: '发布相关', roleEn: 'Publishing' },
 };
 
 const BUILDING_COPY: Record<BuildingId, { zh: string; en: string; tagZh: string; tagEn: string; signZh: string; signEn: string }> = {
@@ -169,9 +169,9 @@ export function say(lang: Lang, p: Phrase): string {
     case 'declined':
       return zh ? '拒绝了。这条留在城里，不会发出去。' : 'Rejected. It stays in the city. Nothing goes out.';
     case 'edited':
-      return zh ? '改了一句。门卫放行，仍然只是模拟。' : 'Edited. Gate lets it through. Still only a simulation.';
+      return zh ? '改了一句。Grok 放行，仍然只是模拟。' : 'Edited. Grok lets it through. Still only a simulation.';
     case 'approved':
-      return zh ? '门卫放行。发报只做模拟，不会真的投稿。' : 'Gate approved. Dispatch only simulates a send.';
+      return zh ? 'Grok 放行。post 只做模拟，不会真的投稿。' : 'Grok approved. post only simulates a send.';
     case 'found':
       return zh ? `拆开「${storyTitle(lang, p.topic)}」` : `Opened “${storyTitle(lang, p.topic)}”`;
     case 'hooksReady':
@@ -183,7 +183,7 @@ export function say(lang: Lang, p: Phrase): string {
     case 'gated':
       return zh ? '拦在门口：批准才发' : 'Stopped at the gate. It ships only if you approve.';
     case 'held':
-      return zh ? '门卫没放行，这条留在内部档' : 'Gate held it. Filed internally.';
+      return zh ? 'Grok 没放行，这条留在内部档' : 'Grok held it. Filed internally.';
     case 'published':
       return zh ? `模拟发出第 ${p.n} 条。没有真的投稿。` : `Simulated send #${p.n}. Nothing was actually posted.`;
     case 'doneStreet':
@@ -249,6 +249,17 @@ export interface Dict {
   atGate: string;
   whichDoor: string;
   gateAsk: string;
+  roster: string;
+  statusIdle: string;
+  statusBusy: string;
+  statusNeeds: string;
+  statusOffline: string;
+  openChat: string;
+  copyId: string;
+  copiedId: string;
+  fleetSample: string;
+  fleetSource: (source: string) => string;
+  webOpen: string;
   pumpkinBtn: string;
   approve: string;
   edit: string;
@@ -327,7 +338,7 @@ const zh: Dict = {
   sevenDoors: '七道门',
   atGate: '过门',
   whichDoor: '今晚主打哪一道门？',
-  gateAsk: '发报前，门卫要你点头',
+  gateAsk: '发出去之前，Grok 要你点头',
   pumpkinBtn: '借腹南瓜城 · 天亮前谁也别走',
   approve: '批准',
   edit: '编辑',
@@ -344,7 +355,7 @@ const zh: Dict = {
   quotaFull: '六条夜班额度满了',
   waitingStory: '等下一条从借腹南瓜城里走出来…',
   queue: '排队：',
-  queueEmpty: '还没有。拆镜在翻时间线。',
+  queueEmpty: '还没有。proto 在翻时间线。',
   street: (n) => `这条街今晚走过 ${n} 段工序。发出去的都是模拟。`,
   stats: '城市数据',
   sample: '示意数字',
@@ -371,9 +382,20 @@ const zh: Dict = {
   summaryAria: '夜班汇总',
   doorsPicked: (you, all) => `你选的门：${you} / 一共 ${all}`,
   pumpkinHooks: '借腹南瓜城钩子',
-  gateLine: (a, e, r) => `门卫：批准 ${a} · 改过 ${e} · 拒绝 ${r}`,
+  gateLine: (a, e, r) => `Grok：批准 ${a} · 改过 ${e} · 拒绝 ${r}`,
   autoLine: (n) => `城自己拿的主意：${n}。没有一条真的发出去。`,
-  mvp: (name) => `今晚最忙的是${name}。灯还亮着，拆镜还在翻。`,
+  mvp: (name) => `今晚最忙的是${name}。灯还亮着，proto 还在翻。`,
+  roster: '花名册',
+  statusIdle: '空闲',
+  statusBusy: '忙碌',
+  statusNeeds: '需要你',
+  statusOffline: '离线',
+  openChat: '打开对话',
+  copyId: '复制 id',
+  copiedId: '已复制',
+  fleetSample: '数据：fleet.json（样例）',
+  fleetSource: (source) => `数据：fleet.json（${source}）`,
+  webOpen: '打开网页',
   keepWatching: '继续看',
   noLabel: '编号',
   viewsBoard: '浏览',
@@ -406,7 +428,7 @@ const en: Dict = {
   sevenDoors: 'Seven doors',
   atGate: 'At the gate',
   whichDoor: 'Which door tonight?',
-  gateAsk: 'Before it goes out, the gate wants your nod',
+  gateAsk: 'Before it goes out, Grok wants your nod',
   pumpkinBtn: '借腹南瓜城 · Nobody leaves before dawn',
   approve: 'Approve',
   edit: 'Edit',
@@ -423,7 +445,7 @@ const en: Dict = {
   quotaFull: 'Six-post quota is full',
   waitingStory: 'Waiting for the next piece to walk out of 借腹南瓜城…',
   queue: 'Queued:',
-  queueEmpty: 'Nothing yet. Cut is still reading.',
+  queueEmpty: 'Nothing yet. proto is still reading.',
   street: (n) => `${n} steps down this street tonight. Every send is simulated.`,
   stats: 'City stats',
   sample: 'sample numbers',
@@ -450,9 +472,20 @@ const en: Dict = {
   summaryAria: 'Night summary',
   doorsPicked: (you, all) => `Doors you picked: ${you} of ${all}`,
   pumpkinHooks: '借腹南瓜城 hooks',
-  gateLine: (a, e, r) => `Gate: approved ${a} · edited ${e} · rejected ${r}`,
+  gateLine: (a, e, r) => `Grok: approved ${a} · edited ${e} · rejected ${r}`,
   autoLine: (n) => `Decisions the city made without you: ${n}. Nothing was actually posted.`,
-  mvp: (name) => `Busiest tonight: ${name}. The lights stay on. Cut keeps reading.`,
+  mvp: (name) => `Busiest tonight: ${name}. The lights stay on. proto keeps reading.`,
+  roster: 'Roster',
+  statusIdle: 'Idle',
+  statusBusy: 'Busy',
+  statusNeeds: 'Needs you',
+  statusOffline: 'Offline',
+  openChat: 'Open chat',
+  copyId: 'Copy id',
+  copiedId: 'Copied',
+  fleetSample: 'Data: fleet.json (sample)',
+  fleetSource: (source) => `Data: fleet.json (${source})`,
+  webOpen: 'Open page',
   keepWatching: 'Keep watching',
   noLabel: 'no.',
   viewsBoard: 'VIEWS',

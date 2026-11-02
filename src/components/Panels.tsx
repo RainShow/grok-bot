@@ -49,7 +49,7 @@ function NeedsYou() {
 function PromptCard({ p, onPick }: { p: Prompt; onPick: (i: number, note?: string) => void }) {
   const sim = useSim();
   const { lang, t } = useI18n();
-  const agent = p.kind === 'hook' ? AGENT_BY_ID.hook : AGENT_BY_ID.gate;
+  const agent = p.kind === 'hook' ? AGENT_BY_ID.pumpkin : AGENT_BY_ID.grok;
   const story = sim.state.story?.id === p.storyId ? sim.state.story : undefined;
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');

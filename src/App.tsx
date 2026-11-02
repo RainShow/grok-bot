@@ -5,6 +5,7 @@ import { Header, Telemetry } from './components/Chrome';
 import { LeftPanel, RightPanel } from './components/Panels';
 import { SummaryModal } from './components/SummaryModal';
 import { City } from './components/city/City';
+import { FleetProvider } from './game/useFleet';
 import { SimContext, useSim, useSimInstance } from './game/useSim';
 import { LangProvider } from './i18n/lang';
 import type { Pt } from './game/iso';
@@ -12,11 +13,13 @@ import type { Pt } from './game/iso';
 export default function App() {
   const sim = useSimInstance();
   return (
-    <LangProvider>
-      <SimContext.Provider value={sim}>
-        <Dashboard />
-      </SimContext.Provider>
-    </LangProvider>
+    <FleetProvider>
+      <LangProvider>
+        <SimContext.Provider value={sim}>
+          <Dashboard />
+        </SimContext.Provider>
+      </LangProvider>
+    </FleetProvider>
   );
 }
 

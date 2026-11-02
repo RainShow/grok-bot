@@ -1,6 +1,7 @@
 import type { BuildingId } from './world';
 
-export type AgentId = 'cut' | 'hook' | 'platform' | 'archive' | 'gate' | 'dispatch';
+/** Night-core walkers. The full roster, including these six, lives in fleet.json. */
+export type AgentId = 'proto' | 'pumpkin' | 'analysis' | 'grok' | 'design' | 'post';
 
 export interface AgentDef {
   id: AgentId;
@@ -12,12 +13,12 @@ export interface AgentDef {
 }
 
 export const AGENTS: AgentDef[] = [
-  { id: 'cut', name: '拆镜', role: '拆开片子', color: '#9ec4e0', home: 'newsroom', shape: 'pill' },
-  { id: 'hook', name: '钩子', role: '写那一句', color: '#d7c4b2', home: 'writers', shape: 'ghost' },
-  { id: 'platform', name: '平台', role: '改成能发的尺寸', color: '#b7c4a4', home: 'studio', shape: 'pill' },
-  { id: 'archive', name: '归档', role: '让数字过夜', color: '#e0d2a8', home: 'bank', shape: 'tri' },
-  { id: 'gate', name: '门卫', role: '不点头就不发', color: '#c5ced8', home: 'cafe', shape: 'ghost' },
-  { id: 'dispatch', name: '发报', role: '只做模拟发出', color: '#c4f93e', home: 'post', shape: 'ghost' },
+  { id: 'proto', name: 'proto', role: '想法 → draft PR', color: '#9ec4e0', home: 'newsroom', shape: 'pill' },
+  { id: 'pumpkin', name: 'pumpkin', role: '内容/发帖准备', color: '#d7c4b2', home: 'writers', shape: 'ghost' },
+  { id: 'design', name: 'design', role: '设计', color: '#b7c4a4', home: 'studio', shape: 'pill' },
+  { id: 'analysis', name: 'analysis', role: '晨间 digest', color: '#e0d2a8', home: 'bank', shape: 'tri' },
+  { id: 'grok', name: 'Grok', role: '主协调', color: '#c5ced8', home: 'cafe', shape: 'ghost' },
+  { id: 'post', name: 'post', role: '发布相关', color: '#c4f93e', home: 'post', shape: 'ghost' },
 ];
 
 export const AGENT_BY_ID = Object.fromEntries(AGENTS.map((a) => [a.id, a])) as Record<AgentId, AgentDef>;
@@ -50,12 +51,12 @@ export interface StageDef {
 }
 
 export const STAGES: StageDef[] = [
-  { key: 'found', agent: 'cut', building: 'newsroom', work: 3.2 },
-  { key: 'written', agent: 'hook', building: 'writers', work: 3.6, gate: 'hook' },
-  { key: 'adapted', agent: 'platform', building: 'studio', work: 3.4 },
-  { key: 'archived', agent: 'archive', building: 'bank', work: 2.6 },
-  { key: 'gated', agent: 'gate', building: 'cafe', work: 2.4, gate: 'approval' },
-  { key: 'published', agent: 'dispatch', building: 'post', work: 3 },
+  { key: 'found', agent: 'proto', building: 'newsroom', work: 3.2 },
+  { key: 'written', agent: 'pumpkin', building: 'writers', work: 3.6, gate: 'hook' },
+  { key: 'adapted', agent: 'design', building: 'studio', work: 3.4 },
+  { key: 'archived', agent: 'analysis', building: 'bank', work: 2.6 },
+  { key: 'gated', agent: 'grok', building: 'cafe', work: 2.4, gate: 'approval' },
+  { key: 'published', agent: 'post', building: 'post', work: 3 },
 ];
 
 export type TopicId = 'hollow' | 'shadow' | 'fruit' | 'stairs' | 'poster' | 'seed' | 'doors' | 'lamp';

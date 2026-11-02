@@ -395,7 +395,8 @@ function Dynamic({ rot, labels }: { rot: number; labels: boolean }) {
         .map(({ d, a, x, y, hop }) => {
           const mode = agentMode(a);
           const name = agentName(lang, d.id);
-          const w = lang === 'zh' ? [...name].length * 14 + 28 : name.length * 7.2 + 28;
+          const wide = [...name].some((ch) => ch.charCodeAt(0) > 255);
+          const w = wide ? [...name].length * 14 + 28 : name.length * 7.2 + 28;
           return (
             <g key={d.id} transform={`translate(${x.toFixed(1)} ${y.toFixed(1)})`} className={`agent agent-${mode}`}>
               <g transform={`translate(0 ${-hop})`}>

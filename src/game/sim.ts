@@ -341,28 +341,28 @@ export class Sim {
     agent.doneToday++;
     switch (stage.key) {
       case 'found':
-        this.log('cut', { id: 'found', topic: story.topic });
+        this.log('proto', { id: 'found', topic: story.topic });
         break;
       case 'written':
-        this.log('hook', { id: 'hooksReady' });
+        this.log('pumpkin', { id: 'hooksReady' });
         break;
       case 'adapted':
-        this.log('platform', { id: 'adapted' });
+        this.log('design', { id: 'adapted' });
         break;
       case 'archived':
-        this.log('archive', { id: 'archived' });
+        this.log('analysis', { id: 'archived' });
         break;
       case 'gated':
-        this.log('gate', { id: 'gated' });
+        this.log('grok', { id: 'gated' });
         break;
       case 'published':
         if (story.gateDecision === 'decline') {
-          this.log('dispatch', { id: 'held' });
+          this.log('post', { id: 'held' });
         } else {
           s.metrics.posts++;
           s.metrics.viewRate += rand(120, 220);
           s.metrics.shares += rand(6, 18);
-          this.log('dispatch', { id: 'published', n: s.metrics.posts });
+          this.log('post', { id: 'published', n: s.metrics.posts });
         }
         break;
     }
@@ -409,7 +409,7 @@ export class Sim {
     this.log('city', { id: 'doneStreet', topic: story.topic });
     s.story = null;
     s.activeBubble = null;
-    const archive = s.agents.archive;
+    const archive = s.agents.analysis;
     this.assign(archive, { kind: 'count', building: 'bank', work: 2.4, left: 2.4, status: { id: 'countJob' } });
     if (s.metrics.posts >= POSTS_PER_DAY) {
       this.log('city', { id: 'quota' });
@@ -479,12 +479,12 @@ export class Sim {
         if (s.queue.length < 3 && s.metrics.posts + s.queue.length < POSTS_PER_DAY) {
           const story = makeStory(s.nextStoryId++);
           s.queue.push(story);
-          this.log('cut', { id: 'bookmark', topic: story.topic });
+          this.log('proto', { id: 'bookmark', topic: story.topic });
         }
         break;
       }
       case 'count':
-        this.log('archive', { id: 'counted', views: Math.round(s.metrics.views), shares: Math.round(s.metrics.shares) });
+        this.log('analysis', { id: 'counted', views: Math.round(s.metrics.views), shares: Math.round(s.metrics.shares) });
         break;
       case 'handoff':
         a.carrying = null;
@@ -497,7 +497,7 @@ export class Sim {
 
   private pickIdleTask(a: AgentState) {
     const s = this.state;
-    if (a.id === 'cut' && s.queue.length < 2 && s.metrics.posts + s.queue.length < POSTS_PER_DAY) {
+    if (a.id === 'proto' && s.queue.length < 2 && s.metrics.posts + s.queue.length < POSTS_PER_DAY) {
       this.assign(a, { kind: 'scan', building: 'newsroom', work: 5, left: 5, status: { id: 'scan' } });
       return;
     }
