@@ -259,6 +259,8 @@ button { cursor: pointer; }
 
 .stage-area { position: relative; overflow: hidden; min-height: 0; }
 
+.city-stage { position: absolute; inset: 0; }
+
 .city-wrap { position: absolute; inset: 0; cursor: grab; touch-action: none; }
 .city-wrap:active { cursor: grabbing; }
 
@@ -786,6 +788,136 @@ button { cursor: pointer; }
   .camera-controls button { min-width: 34px; }
   .verse { display: none; }
   .telemetry { letter-spacing: 0.08em; font-size: 9px; }
+}
+
+/* Tablet portrait and phones: the overlay panels no longer fit beside the city. */
+@media (max-width: 900px) {
+  html, body, #root { height: auto; min-height: 100%; }
+
+  .app {
+    height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+  }
+
+  .header {
+    position: sticky;
+    top: 0;
+    z-index: 6;
+    gap: 8px;
+    padding: 8px 12px 10px;
+  }
+
+  .header-pills {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .pill { min-width: 0; padding: 6px 8px 5px; }
+  .pill b { font-size: 14px; }
+  .pill-l { letter-spacing: 0.02em; font-size: 9px; }
+
+  .header-controls {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .brand h1 { font-size: 18px; flex-wrap: wrap; }
+  .pause-mark, .lang-toggle { width: 44px; height: 44px; }
+  .seg button, .ghost-btn { min-height: 44px; }
+  .ghost-btn, .user-chip, .clock-widget { white-space: nowrap; }
+  .clock-widget, .user-chip { min-height: 44px; }
+
+  .stage-area {
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+    height: auto;
+    flex: none;
+  }
+
+  .city-stage {
+    position: relative;
+    inset: auto;
+    height: min(46dvh, 420px);
+    min-height: 300px;
+    flex: none;
+    overflow: hidden;
+  }
+
+  .telemetry {
+    left: 10px;
+    right: 10px;
+    top: 8px;
+    bottom: auto;
+  }
+
+  .camera-controls {
+    bottom: 6px;
+    max-width: calc(100% - 12px);
+  }
+
+  .camera-controls button { min-width: 44px; min-height: 44px; }
+  .cc-label { display: block; }
+
+  .panel {
+    position: relative;
+    top: auto;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    width: auto;
+    margin: 12px 12px 0;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .panel.glass { background: #0b0d10; }
+  .panel-right { overflow: visible; }
+  .needs { max-height: none; overflow: visible; }
+  .activity { flex: none; }
+  .log {
+    flex: none;
+    min-height: 140px;
+    max-height: 240px;
+    mask-image: none;
+  }
+
+  .series-btn, .pumpkin-btn, .btn-approve, .btn-edit, .btn-decline, .btn-skip {
+    min-height: 44px;
+  }
+
+  .agent-cards {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 12px 12px calc(16px + env(safe-area-inset-bottom));
+  }
+
+  .agent-card { min-height: 96px; padding: 12px; }
+  .ac-name b { font-size: 15px; }
+
+  .modal {
+    max-height: min(88dvh, 720px);
+    overflow: auto;
+    padding: 16px;
+  }
+
+  .modal-stats { grid-template-columns: 1fr 1fr; }
+  .modal-stats div + div { border-left: 0; }
+  .modal-stats div:nth-child(even) { border-left: 1px solid rgba(232, 236, 239, 0.1); }
+  .modal-stats div:nth-child(n + 3) { border-top: 1px solid rgba(232, 236, 239, 0.1); }
+  .modal-agents { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 480px) {
+  .clock-time { font-size: 16px; }
+  .ac-top { align-items: flex-start; }
+  .ac-mode { margin-left: auto; }
 }
 
 @media (prefers-reduced-motion: reduce) {

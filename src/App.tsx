@@ -64,30 +64,32 @@ function Dashboard() {
     <div className="app">
       <Header />
       <main className="stage-area">
-        <div
-          className="city-wrap"
-          onPointerDown={onDown}
-          onPointerMove={onMove}
-          onPointerUp={onUp}
-          onPointerCancel={onUp}
-        >
-          <div className="shafts" aria-hidden />
-          <div className="mist" aria-hidden />
-          <div className="stars" aria-hidden />
-          <div className="vignette" aria-hidden />
-          <City rot={rot} zoom={ZOOMS[zoomIdx]} pan={pan} labels={labels} />
+        <div className="city-stage">
+          <div
+            className="city-wrap"
+            onPointerDown={onDown}
+            onPointerMove={onMove}
+            onPointerUp={onUp}
+            onPointerCancel={onUp}
+          >
+            <div className="shafts" aria-hidden />
+            <div className="mist" aria-hidden />
+            <div className="stars" aria-hidden />
+            <div className="vignette" aria-hidden />
+            <City rot={rot} zoom={ZOOMS[zoomIdx]} pan={pan} labels={labels} />
+          </div>
+          <Telemetry xyRef={xyRef} />
+          <CameraControls
+            onReset={reset}
+            onRotate={(d) => setRot((r) => (r + d + 4) % 4)}
+            onZoom={(d) => setZoomIdx((z) => Math.max(0, Math.min(ZOOMS.length - 1, z + d)))}
+            labels={labels}
+            onToggleLabels={() => setLabels((l) => !l)}
+            onSummary={() => sim.openSummary()}
+          />
         </div>
-        <Telemetry xyRef={xyRef} />
         <LeftPanel />
         <RightPanel />
-        <CameraControls
-          onReset={reset}
-          onRotate={(d) => setRot((r) => (r + d + 4) % 4)}
-          onZoom={(d) => setZoomIdx((z) => Math.max(0, Math.min(ZOOMS.length - 1, z + d)))}
-          labels={labels}
-          onToggleLabels={() => setLabels((l) => !l)}
-          onSummary={() => sim.openSummary()}
-        />
       </main>
       <AgentCards />
       <SummaryModal />
