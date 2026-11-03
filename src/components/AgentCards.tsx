@@ -16,11 +16,24 @@ function statusLabel(status: FleetStatus, t: ReturnType<typeof useI18n>['t']) {
   }
 }
 
-export function AgentCards() {
+export function AgentCards({
+  selectedId: controlledId,
+  onSelect,
+  hideDetail = false,
+}: {
+  selectedId?: string | null;
+  onSelect?: (id: string | null) => void;
+  hideDetail?: boolean;
+} = {}) {
   const fleet = useFleet();
   const { t } = useI18n();
   const bots = orderRoster(fleet.bots);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [localId, setLocalId] = useState<string | null>(null);
+  const selectedId = onSelect ? (controlledId ?? null) : localId;
+  const setSelectedId = (id: string | null) => {
+    if (onSelect) onSelect(id);
+    else setLocalId(id);
+  };
   const selected = bots.find((bot) => bot.id === selectedId) ?? null;
   const note = fleet.source === 'sample' ? t.fleetSample : t.fleetSource(fleet.source);
 
@@ -40,9 +53,14 @@ export function AgentCards() {
     return () => window.removeEventListener('keydown', onKey);
   }, [selectedId]);
 
+  useEffect(() => {
+    if (!selectedId) return;
+    document.querySelector('.agent-card.is-selected')?.scrollIntoView({ inline: 'center', block: 'nearest' });
+  }, [selectedId]);
+
   return (
     <footer className="roster">
-      {selected && <BotDetail key={selected.id} bot={selected} note={note} />}
+      {!hideDetail && selected && <BotDetail key={selected.id} bot={selected} note={note} />}
       <div className="agent-cards" aria-label={t.roster}>
         {bots.map((bot) => {
           const on = bot.id === selectedId;
@@ -56,7 +74,7 @@ export function AgentCards() {
               aria-pressed={on}
               aria-expanded={on}
               data-testid={`bot-${bot.name.replace(/\s+/g, '-')}`}
-              onClick={() => setSelectedId((cur) => (cur === bot.id ? null : bot.id))}
+              onClick={() => setSelectedId(bot.id === selectedId ? null : bot.id)}
             >
               <span className="ac-top">
                 <span className="ac-pip" />
@@ -77,7 +95,7 @@ export function AgentCards() {
   );
 }
 
-function BotDetail({ bot, note }: { bot: FleetBot; note: string }) {
+export function BotDetail({ bot, note, className }: { bot: FleetBot; note: string; className?: string }) {
   const { t } = useI18n();
   const [copied, setCopied] = useState(false);
   const label = statusLabel(bot.status, t);
@@ -109,7 +127,7 @@ function BotDetail({ bot, note }: { bot: FleetBot; note: string }) {
   };
 
   return (
-    <div className={`roster-detail status-${bot.status}`} role="region" aria-label={`${heading} · ${bot.role}`} data-testid="bot-detail">
+    <div className={`roster-detail status-${bot.status}${className ? ` ${className}` : ''}`} role="region" aria-label={`${heading} · ${bot.role}`} data-testid="bot-detail">
       <div className="roster-line">
         <span className="ac-pip" style={{ background: bot.color ?? '#8b959e' }} />
         <b>{heading}</b>
