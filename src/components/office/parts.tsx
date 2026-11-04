@@ -60,19 +60,34 @@ export function Box({
   );
 }
 
-export function Desk({ position, rotation = 0, screen = '#8ecfc4' }: { position: V3; rotation?: number; screen?: string }) {
+export function Desk({
+  position,
+  rotation = 0,
+  screen = '#8ecfc4',
+  dark = false,
+}: {
+  position: V3;
+  rotation?: number;
+  screen?: string;
+  dark?: boolean;
+}) {
+  const top = dark ? '#2c343c' : '#f4f1ea';
+  const leg = dark ? '#1a2128' : '#e4ddd2';
+  const seat = dark ? '#161c22' : '#2a3038';
   return (
     <group position={position} rotation={[0, rotation, 0]}>
-      <Box args={[1.28, 0.07, 0.66]} position={[0, 0.74, 0]} color="#f6f3ec" roughness={0.5} radius={0.02} castShadow />
-      <Box args={[0.07, 0.7, 0.07]} position={[-0.54, 0.36, 0.22]} color="#e3ddd3" />
-      <Box args={[0.07, 0.7, 0.07]} position={[0.54, 0.36, 0.22]} color="#e3ddd3" />
-      <Box args={[0.07, 0.7, 0.07]} position={[-0.54, 0.36, -0.22]} color="#e3ddd3" />
-      <Box args={[0.07, 0.7, 0.07]} position={[0.54, 0.36, -0.22]} color="#e3ddd3" />
-      <Box args={[0.46, 0.3, 0.04]} position={[0.08, 1.02, -0.24]} color="#1c242c" />
-      <Box args={[0.38, 0.22, 0.02]} position={[0.08, 1.02, -0.21]} color={screen} emissive={screen} emissiveIntensity={0.45} />
-      <Box args={[0.05, 0.14, 0.04]} position={[0.08, 0.84, -0.24]} color="#1c242c" />
-      <Box args={[0.38, 0.06, 0.36]} position={[0, 0.46, 0.48]} color="#2a3038" radius={0.03} />
-      <Box args={[0.38, 0.38, 0.06]} position={[0, 0.66, 0.64]} color="#2a3038" radius={0.03} />
+      <Box args={[1.28, 0.07, 0.66]} position={[0, 0.74, 0]} color={top} roughness={dark ? 0.4 : 0.55} radius={0.03} castShadow />
+      <Box args={[1.16, 0.05, 0.52]} position={[0, 0.68, 0.02]} color={leg} />
+      <Box args={[0.06, 0.66, 0.06]} position={[-0.54, 0.34, 0.24]} color={leg} />
+      <Box args={[0.06, 0.66, 0.06]} position={[0.54, 0.34, 0.24]} color={leg} />
+      <Box args={[0.06, 0.66, 0.06]} position={[-0.54, 0.34, -0.24]} color={leg} />
+      <Box args={[0.06, 0.66, 0.06]} position={[0.54, 0.34, -0.24]} color={leg} />
+      <Box args={[0.34, 0.02, 0.14]} position={[-0.02, 0.79, 0.12]} color={dark ? '#0e141a' : '#d9d3c8'} />
+      <Box args={[0.5, 0.32, 0.045]} position={[0.02, 1.05, -0.24]} color="#141a20" />
+      <Box args={[0.42, 0.24, 0.02]} position={[0.02, 1.05, -0.21]} color={screen} emissive={screen} emissiveIntensity={0.55} />
+      <Box args={[0.05, 0.16, 0.04]} position={[0.02, 0.86, -0.24]} color="#141a20" />
+      <Box args={[0.4, 0.07, 0.38]} position={[0, 0.46, 0.5]} color={seat} radius={0.04} />
+      <Box args={[0.4, 0.42, 0.07]} position={[0, 0.68, 0.66]} color={seat} radius={0.04} />
     </group>
   );
 }

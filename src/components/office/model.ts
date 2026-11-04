@@ -5,14 +5,62 @@ export type FloorId = 'overview' | 'night' | 'content' | 'research' | 'lobby' | 
 export type HomeFloor = 'night' | 'content' | 'research' | 'lobby';
 
 export const FLOOR_Y: Record<HomeFloor, number> = {
-  lobby: 0,
-  research: 3.3,
-  content: 6.6,
-  night: 9.9,
+  lobby: 0.4,
+  research: 3.76,
+  content: 7.12,
+  night: 10.48,
 };
 
-export const PLATE_W = 12.2;
-export const PLATE_D = 9;
+export const PLATE_W = 12.6;
+export const PLATE_D = 9.2;
+
+/** Desk yaw. Chair sits on local +z; bots face the desk, three-quarter toward the camera. */
+export const DESK_YAW = Math.PI + 0.72;
+
+export interface Seat {
+  at: [number, number];
+  rot: number;
+}
+
+export function chairFromDesk(x: number, z: number, yaw = DESK_YAW): Seat {
+  return {
+    at: [x + Math.sin(yaw) * 0.5, z + Math.cos(yaw) * 0.5],
+    rot: yaw + Math.PI,
+  };
+}
+
+const NIGHT_DESKS: [number, number][] = [
+  [-4.4, -0.15],
+  [-2.64, -0.15],
+  [-0.88, -0.15],
+  [0.88, -0.15],
+  [2.64, -0.15],
+  [4.4, -0.15],
+];
+const CONTENT_DESKS: [number, number][] = [
+  [-3.55, 0.2],
+  [-1.6, 0.2],
+  [0.35, 0.2],
+];
+const RESEARCH_DESKS: [number, number][] = [
+  [-3.35, -0.25],
+  [-1.15, -0.25],
+  [1.1, -0.25],
+  [3.25, -0.25],
+];
+
+export const WORK_DESKS = {
+  night: NIGHT_DESKS,
+  content: CONTENT_DESKS,
+  research: RESEARCH_DESKS,
+} as const;
+
+export const SEATS: Record<HomeFloor, Seat[]> = {
+  night: NIGHT_DESKS.map(([x, z]) => chairFromDesk(x, z)),
+  content: CONTENT_DESKS.map(([x, z]) => chairFromDesk(x, z)),
+  research: RESEARCH_DESKS.map(([x, z]) => chairFromDesk(x, z)),
+  lobby: [{ at: [1.45, 1.72], rot: 0.5 }],
+};
 
 const NIGHT = new Set(['proto', 'pumpkin', 'design', 'analysis', 'grok', 'post']);
 const CONTENT = new Set(['operation', 'weekly', 'chat']);
@@ -49,17 +97,17 @@ export interface Pose {
 export function poseFor(floor: FloorId): Pose {
   switch (floor) {
     case 'overview':
-      return { pos: [20, 19, 20], look: [-0.6, 5.1, 1.1], zoom: 40 };
+      return { pos: [23, 17.5, 23], look: [0.7, 6.3, 0.45], zoom: 40 };
     case 'night':
-      return { pos: [11, 20.2, 11], look: [0.15, 10.65, 0.15], zoom: 64 };
+      return { pos: [14.2, 15.4, 14.2], look: [0.15, 9.15, 0.05], zoom: 76 };
     case 'content':
-      return { pos: [11, 16.9, 11], look: [0.15, 7.35, 0.15], zoom: 64 };
+      return { pos: [13.6, 13.2, 13.6], look: [0.1, 6.15, 0.05], zoom: 78 };
     case 'research':
-      return { pos: [11, 13.6, 11], look: [0.15, 4.05, 0.15], zoom: 64 };
+      return { pos: [13.2, 11.2, 13.2], look: [0.1, 3.35, 0.05], zoom: 80 };
     case 'lobby':
-      return { pos: [15, 15.5, 15], look: [0.2, 1.15, 1.5], zoom: 44 };
+      return { pos: [15.5, 10.4, 15.5], look: [0.15, 1.7, 0.4], zoom: 58 };
     case 'classified':
-      return { pos: [11, 13.4, 11], look: [0, 1.25, 0], zoom: 60 };
+      return { pos: [12, 13.6, 12], look: [0, 1.2, 0], zoom: 58 };
   }
 }
 

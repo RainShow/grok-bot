@@ -1,84 +1,342 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, type ReactNode } from 'react';
+import { RoundedBox } from '@react-three/drei';
+import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { FLOOR_Y, type FloorId, type HomeFloor } from './model';
 import { Box, Car, Palm, Plant } from './parts';
-import { useFontRevision, useSignTexture, useSoftShadow, useStoryTexture } from './textures';
+import { useFontRevision, useSignTexture, useSoftShadow } from './textures';
 
-const STORIES = [0, 3.3, 6.6, 9.9];
+const W = 13.2;
+const D = 9.6;
+const WALL = 2.78;
+const GLASS_H = 2.16;
+const GLASS_Y = 1.42;
+const ORDER: HomeFloor[] = ['lobby', 'research', 'content', 'night'];
 
-function StoryBand({ y, material }: { y: number; material: THREE.Material }) {
-  const w = 12.2;
-  const d = 9;
-  const h = 2.95;
-  const mid = 0.24 + h / 2;
+const slabMat = new THREE.MeshStandardMaterial({ color: '#f5f6f8', roughness: 0.84, metalness: 0.02 });
+const wallMat = new THREE.MeshStandardMaterial({ color: '#f3f5f7', roughness: 0.78 });
+const darkMat = new THREE.MeshStandardMaterial({ color: '#1c2630', metalness: 0.48, roughness: 0.3 });
+const shaftMat = new THREE.MeshPhysicalMaterial({
+  color: '#d5e7f2',
+  roughness: 0.05,
+  metalness: 0,
+  transmission: 0.8,
+  thickness: 0.28,
+  transparent: true,
+  opacity: 0.55,
+  depthWrite: false,
+});
+
+function makeGlass() {
+  const mat = new THREE.MeshPhysicalMaterial({
+    color: '#e7f3f8',
+    roughness: 0.06,
+    metalness: 0,
+    transmission: 0.9,
+    thickness: 0.42,
+    ior: 1.45,
+    transparent: true,
+    opacity: 1,
+    depthWrite: false,
+    envMapIntensity: 1.2,
+    attenuationColor: new THREE.Color('#d5e8f4'),
+    attenuationDistance: 1.4,
+    side: THREE.DoubleSide,
+  });
+  mat.userData.baseTransmission = 0.9;
+  mat.userData.keepDepth = true;
+  return mat;
+}
+
+function spring(value: number, target: number, vel: { v: number }, omega: number, dt: number) {
+  const step = 1 / 60;
+  let left = Math.min(dt, 0.05);
+  let current = value;
+  while (left > 0.0001) {
+    const h = Math.min(step, left);
+    const x = current - target;
+    vel.v += (-omega * omega * x - 2 * omega * vel.v) * h;
+    current += vel.v * h;
+    left -= h;
+  }
+  return current;
+}
+
+function fadeMat(mat: THREE.Material, fade: number) {
+  const prev = mat.userData.fade as number | undefined;
+  if (prev !== undefined && Math.abs(prev - fade) < 0.02) return;
+  mat.userData.fade = fade;
+  mat.opacity = fade;
+  mat.transparent = true;
+  if (!mat.userData.keepDepth) mat.depthWrite = fade > 0.9;
+  if (mat instanceof THREE.MeshPhysicalMaterial && mat.userData.baseTransmission) {
+    mat.transmission = (mat.userData.baseTransmission as number) * fade;
+  }
+}
+
+function Curtain({
+  width,
+  height,
+  glass,
+  mullion,
+  position,
+  rotation,
+}: {
+  width: number;
+  height: number;
+  glass: THREE.Material;
+  mullion: THREE.Material;
+  position: [number, number, number];
+  rotation?: [number, number, number];
+}) {
+  const ref = useRef<THREE.InstancedMesh>(null);
+  const cols = Math.max(4, Math.round(width / 0.76));
+  const geo = useMemo(() => new THREE.BoxGeometry(0.038, height - 0.04, 0.05), [height]);
+  useLayoutEffect(() => {
+    const mesh = ref.current;
+    if (!mesh) return;
+    const matrix = new THREE.Matrix4();
+    const step = width / cols;
+    for (let i = 0; i <= cols; i += 1) {
+      matrix.makeTranslation(-width / 2 + i * step, 0, 0.03);
+      mesh.setMatrixAt(i, matrix);
+    }
+    mesh.instanceMatrix.needsUpdate = true;
+  }, [cols, width]);
+  useEffect(() => () => geo.dispose(), [geo]);
   return (
-    <group position={[0, y, 0]}>
-      <Box args={[w, 0.24, d]} position={[0, 0.12, 0]} color="#fbfcfd" roughness={0.88} castShadow receiveShadow />
-      <mesh position={[0, mid, d / 2]} material={material}>
-        <planeGeometry args={[w - 0.2, h]} />
+    <group position={position} rotation={rotation}>
+      <mesh material={glass} dispose={null}>
+        <planeGeometry args={[width, height]} />
       </mesh>
-      <mesh position={[w / 2, mid, 0]} rotation={[0, Math.PI / 2, 0]} material={material}>
-        <planeGeometry args={[d - 0.2, h]} />
+      <instancedMesh ref={ref} args={[geo, mullion, cols + 1]} dispose={null} frustumCulled={false} />
+      <mesh material={mullion} position={[0, height * 0.22, 0.03]} dispose={null}>
+        <boxGeometry args={[width, 0.032, 0.04]} />
       </mesh>
-      <Box args={[w, h, 0.1]} position={[0, mid, -d / 2]} color="#e6ebf0" roughness={0.85} />
-      <Box args={[0.1, h, d]} position={[-w / 2, mid, 0]} color="#eef2f6" roughness={0.85} />
-      <Box args={[0.22, h + 0.24, 0.22]} position={[w / 2 - 0.04, mid, d / 2 - 0.04]} color="#f7f8fa" />
-      <Box args={[0.22, h + 0.24, 0.22]} position={[-w / 2 + 0.04, mid, d / 2 - 0.04]} color="#f7f8fa" />
-      <Box args={[0.22, h + 0.24, 0.22]} position={[w / 2 - 0.04, mid, -d / 2 + 0.04]} color="#f4f6f8" />
-      <Box args={[0.22, h + 0.24, 0.22]} position={[-w / 2 + 0.04, mid, -d / 2 + 0.04]} color="#f4f6f8" />
+      <mesh material={mullion} position={[0, -height * 0.2, 0.03]} dispose={null}>
+        <boxGeometry args={[width, 0.032, 0.04]} />
+      </mesh>
     </group>
   );
 }
 
-function Roof() {
+function Shaft({ glass, metal }: { glass: THREE.Material; metal: THREE.Material }) {
+  const h = 2.95;
+  const posts: [number, number][] = [
+    [-0.38, -0.58],
+    [0.38, -0.58],
+    [-0.38, 0.58],
+    [0.38, 0.58],
+  ];
   return (
-    <group position={[0, 13.15, 0]}>
-      <Box args={[12.5, 0.16, 9.3]} position={[0, 0, 0]} color="#f7f8fa" roughness={0.9} castShadow receiveShadow />
-      <Box args={[12.7, 0.28, 0.12]} position={[0, 0.18, 4.6]} color="#fbfcfd" />
-      <Box args={[12.7, 0.28, 0.12]} position={[0, 0.18, -4.6]} color="#f3f5f7" />
-      <Box args={[0.12, 0.28, 9.3]} position={[6.28, 0.18, 0]} color="#fbfcfd" />
-      <Box args={[0.12, 0.28, 9.3]} position={[-6.28, 0.18, 0]} color="#f3f5f7" />
+    <group position={[W / 2 + 1.35, h / 2, 1.05]}>
+      <mesh material={glass} dispose={null}>
+        <boxGeometry args={[0.82, h, 1.28]} />
+      </mesh>
+      {posts.map((p, i) => (
+        <mesh key={i} position={[p[0], 0, p[1]]} material={metal} dispose={null}>
+          <boxGeometry args={[0.045, h, 0.045]} />
+        </mesh>
+      ))}
+      <mesh position={[0, -0.15, 0]} material={metal} dispose={null}>
+        <boxGeometry args={[0.74, 0.04, 1.16]} />
+      </mesh>
+    </group>
+  );
+}
+
+function Roof({ trim, dark, metal }: { trim: THREE.Material; dark: THREE.Material; metal: THREE.Material }) {
+  return (
+    <group position={[0, 2.9, 0]}>
+      <RoundedBox args={[W + 0.35, 0.18, D + 0.28]} radius={0.06} smoothness={2} bevelSegments={2} material={trim} castShadow receiveShadow dispose={null} />
+      <mesh position={[0, 0.16, D / 2 + 0.08]} material={trim} dispose={null}>
+        <boxGeometry args={[W + 0.5, 0.22, 0.08]} />
+      </mesh>
+      <mesh position={[0, 0.16, -D / 2 - 0.08]} material={trim} dispose={null}>
+        <boxGeometry args={[W + 0.5, 0.22, 0.08]} />
+      </mesh>
       {Array.from({ length: 3 }, (_, row) =>
-        Array.from({ length: 4 }, (_, col) => (
-          <mesh key={`${row}-${col}`} position={[-1.7 + col * 1.15, 0.28, -1.7 + row * 1.35]} rotation={[-0.42, 0, 0]} castShadow>
-            <boxGeometry args={[1.02, 0.04, 0.62]} />
-            <meshStandardMaterial color="#1c2632" metalness={0.45} roughness={0.32} />
+        Array.from({ length: 5 }, (_, col) => (
+          <mesh key={`${row}-${col}`} position={[-2.3 + col * 1.15, 0.22, -1.5 + row * 1.15]} rotation={[-0.42, 0.15, 0]} material={dark} castShadow dispose={null}>
+            <boxGeometry args={[1.02, 0.035, 0.62]} />
           </mesh>
         )),
       )}
-      <Box args={[1.5, 0.55, 0.9]} position={[-4.2, 0.42, -2.6]} color="#e7ecf1" radius={0.06} castShadow />
-      <Box args={[1.15, 0.42, 0.75]} position={[-4.2, 0.36, -1.2]} color="#d5dde4" radius={0.05} castShadow />
-      <mesh position={[-4.2, 0.74, -2.6]} rotation={[-Math.PI / 2, 0, 0]}>
-        <cylinderGeometry args={[0.28, 0.28, 0.06, 16]} />
-        <meshStandardMaterial color="#2a333c" />
+      <RoundedBox args={[1.7, 0.55, 0.95]} position={[-4.3, 0.4, -2.4]} radius={0.08} smoothness={2} material={trim} castShadow dispose={null} />
+      <mesh position={[-4.3, 0.72, -2.4]} rotation={[-Math.PI / 2, 0, 0]} material={dark} dispose={null}>
+        <cylinderGeometry args={[0.28, 0.32, 0.08, 16]} />
       </mesh>
-      <mesh position={[3.6, 0.45, 1.4]}>
-        <boxGeometry args={[1.8, 0.08, 1.3]} />
-        <meshStandardMaterial color="#d5e4ee" transparent opacity={0.55} roughness={0.08} />
+      <RoundedBox args={[1.15, 0.38, 0.7]} position={[-4.3, 0.32, -1.05]} radius={0.06} smoothness={2} material={metal} castShadow dispose={null} />
+      <mesh position={[3.4, 0.28, 1.5]} dispose={null}>
+        <boxGeometry args={[2.1, 0.06, 1.35]} />
+        <meshPhysicalMaterial color="#d5e8f2" transmission={0.65} roughness={0.08} thickness={0.2} transparent opacity={0.7} />
       </mesh>
-      <Box args={[1.9, 0.08, 0.08]} position={[3.6, 0.2, 2.05]} color="#c5d0da" />
-      <Box args={[1.9, 0.08, 0.08]} position={[3.6, 0.2, 0.75]} color="#c5d0da" />
     </group>
   );
 }
 
-function Elevator() {
-  const h = 13.2;
+function Story({
+  id,
+  floor,
+  sign,
+  children,
+}: {
+  id: HomeFloor;
+  floor: FloorId;
+  sign: THREE.Texture | null;
+  children: ReactNode;
+}) {
+  const group = useRef<THREE.Group>(null);
+  const front = useRef<THREE.Group>(null);
+  const roof = useRef<THREE.Group>(null);
+  const shaftRef = useRef<THREE.Group>(null);
+  const interior = useRef<THREE.Group>(null);
+  const lift = useRef(0);
+  const liftV = useRef({ v: 0 });
+  const open = useRef(0);
+  const openV = useRef({ v: 0 });
+  const idx = ORDER.indexOf(id);
+  const glass = useMemo(() => makeGlass(), []);
+  const mullion = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: '#2a323a', metalness: 0.45, roughness: 0.34, transparent: true, opacity: 1 }),
+    [],
+  );
+  const trim = useMemo(() => wallMat.clone(), []);
+  const slab = useMemo(() => slabMat.clone(), []);
+  const dark = useMemo(() => darkMat.clone(), []);
+  const shaft = useMemo(() => {
+    const mat = shaftMat.clone();
+    mat.userData.baseTransmission = 0.8;
+    mat.userData.keepDepth = true;
+    return mat;
+  }, []);
+  const signMat = useMemo(() => {
+    if (!sign) return null;
+    const mat = new THREE.MeshBasicMaterial({ map: sign, transparent: true, depthWrite: false, opacity: 1 });
+    mat.userData.keepDepth = true;
+    return mat;
+  }, [sign]);
+  useEffect(
+    () => () => {
+      glass.dispose();
+      mullion.dispose();
+      trim.dispose();
+      slab.dispose();
+      dark.dispose();
+      shaft.dispose();
+      signMat?.dispose();
+    },
+    [glass, mullion, trim, slab, dark, shaft, signMat],
+  );
+
+  useFrame((_, rawDt) => {
+    const active = ORDER.indexOf(floor as HomeFloor);
+    const selected = active >= 0;
+    const leaving = selected && idx > active;
+    const opening = selected && idx === active;
+    lift.current = spring(lift.current, leaving ? 14 + (idx - active) * 1.6 : 0, liftV.current, 7.2, rawDt);
+    open.current = spring(open.current, opening ? 1 : 0, openV.current, 8.4, rawDt);
+    const fade = Math.max(0, 1 - Math.max(0, lift.current) / 5.2);
+    fadeMat(glass, fade);
+    fadeMat(mullion, fade);
+    fadeMat(trim, fade);
+    fadeMat(slab, fade);
+    fadeMat(dark, fade);
+    fadeMat(shaft, fade);
+    if (signMat) fadeMat(signMat, fade);
+    const root = group.current;
+    if (root) {
+      root.position.y = FLOOR_Y[id] + lift.current;
+      root.visible = lift.current < 6.2;
+    }
+    if (front.current) {
+      front.current.position.y = -open.current * 2.2;
+      front.current.visible = open.current < 0.94;
+    }
+    if (roof.current) roof.current.visible = open.current < 0.22;
+    if (shaftRef.current) shaftRef.current.visible = open.current < 0.35;
+    if (interior.current) interior.current.visible = open.current > 0.16;
+  });
+
+  const sideYaw: [number, number, number] = [0, Math.PI / 2, 0];
   return (
-    <group position={[7.05, h / 2, 1.5]}>
-      <mesh>
-        <boxGeometry args={[1.15, h, 1.85]} />
-        <meshStandardMaterial color="#d7e4ee" transparent opacity={0.32} roughness={0.08} metalness={0.15} />
-      </mesh>
-      {Array.from({ length: 9 }, (_, i) => (
-        <Box key={i} args={[1.2, 0.045, 1.9]} position={[0, -h / 2 + 0.7 + i * 1.45, 0]} color="#9aa8b4" metalness={0.35} roughness={0.35} />
+    <group ref={group} position={[0, FLOOR_Y[id], 0]}>
+      <RoundedBox
+        args={[W, 0.36, D]}
+        position={[0, -0.18, 0]}
+        radius={0.08}
+        smoothness={2}
+        bevelSegments={2}
+        material={slab}
+        castShadow
+        receiveShadow
+        dispose={null}
+      />
+      {(
+        [
+          [1, 1],
+          [1, -1],
+          [-1, 1],
+          [-1, -1],
+        ] as const
+      ).map(([sx, sz]) => (
+        <RoundedBox
+          key={`${sx}${sz}`}
+          args={[0.28, WALL, 0.28]}
+          position={[sx * (W / 2 - 0.08), WALL / 2, sz * (D / 2 - 0.08)]}
+          radius={0.06}
+          smoothness={2}
+          bevelSegments={2}
+          material={trim}
+          castShadow
+          dispose={null}
+        />
       ))}
-      {[
-        [-0.58, -0.9],
-        [0.58, -0.9],
-        [-0.58, 0.9],
-        [0.58, 0.9],
-      ].map((p, i) => (
-        <Box key={i} args={[0.07, h, 0.07]} position={[p[0], 0, p[1]]} color="#8b98a4" metalness={0.4} roughness={0.3} />
+      <mesh position={[0, WALL / 2, -D / 2 + 0.06]} material={trim} receiveShadow dispose={null}>
+        <boxGeometry args={[W - 0.2, WALL, 0.12]} />
+      </mesh>
+      <mesh position={[0, 0.16, D / 2]} material={trim} dispose={null}>
+        <boxGeometry args={[W, 0.28, 0.14]} />
+      </mesh>
+      <Curtain width={D - 0.36} height={GLASS_H} glass={glass} mullion={mullion} position={[W / 2, GLASS_Y, 0]} rotation={sideYaw} />
+      <Curtain width={D - 0.36} height={GLASS_H} glass={glass} mullion={mullion} position={[-W / 2, GLASS_Y, 0]} rotation={[0, -Math.PI / 2, 0]} />
+      <mesh position={[W / 2, 2.62, 0]} material={trim} dispose={null}>
+        <boxGeometry args={[0.14, 0.28, D]} />
+      </mesh>
+      <mesh position={[-W / 2, 2.62, 0]} material={trim} dispose={null}>
+        <boxGeometry args={[0.14, 0.28, D]} />
+      </mesh>
+      <group ref={front}>
+        <Curtain width={W - 0.28} height={GLASS_H} glass={glass} mullion={mullion} position={[0, GLASS_Y, D / 2 + 0.02]} />
+        <mesh position={[0, 2.62, D / 2 + 0.02]} material={trim} dispose={null}>
+          <boxGeometry args={[W, 0.28, 0.12]} />
+        </mesh>
+        {signMat && (
+          <mesh position={[0, 1.58, D / 2 + 0.1]} material={signMat} dispose={null}>
+            <planeGeometry args={[6.6, 1.25]} />
+          </mesh>
+        )}
+      </group>
+      <group ref={shaftRef}>
+        <Shaft glass={shaft} metal={mullion} />
+      </group>
+      <group ref={roof}>{id === 'night' && <Roof trim={trim} dark={dark} metal={mullion} />}</group>
+      <group ref={interior} visible={false}>
+        {children}
+      </group>
+    </group>
+  );
+}
+
+export function Dollhouse({ floor, children }: { floor: FloorId; children: (id: HomeFloor) => ReactNode }) {
+  const rev = useFontRevision();
+  const sign = useSignTexture(rev);
+  return (
+    <group>
+      {ORDER.map((id) => (
+        <Story key={id} id={id} floor={floor} sign={id === 'content' ? sign : null}>
+          {children(id)}
+        </Story>
       ))}
     </group>
   );
@@ -140,37 +398,13 @@ function Truck() {
   );
 }
 
-export function Shell() {
-  const tex = useStoryTexture();
-  const rev = useFontRevision();
-  const sign = useSignTexture(rev);
-  const glass = useMemo(
-    () => new THREE.MeshStandardMaterial({ map: tex, color: '#f5f8fb', roughness: 0.38, metalness: 0.08 }),
-    [tex],
-  );
-  useEffect(() => () => glass.dispose(), [glass]);
-  return (
-    <group>
-      {STORIES.map((y) => (
-        <StoryBand key={y} y={y} material={glass} />
-      ))}
-      <Roof />
-      <Elevator />
-      <mesh position={[0, 8.15, 4.56]}>
-        <planeGeometry args={[7.4, 1.9]} />
-        <meshBasicMaterial map={sign} transparent depthWrite={false} />
-      </mesh>
-    </group>
-  );
-}
-
 export function Grounds() {
   const shadow = useSoftShadow();
   return (
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
         <planeGeometry args={[80, 80]} />
-        <meshStandardMaterial color="#e7ebf0" roughness={1} />
+        <meshStandardMaterial color="#e4e7ec" roughness={1} />
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0.4, 0.02, 1.2]}>
         <planeGeometry args={[20, 16]} />

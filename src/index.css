@@ -1074,12 +1074,21 @@ body:has(.office-app.is-classified) { background: #12060a; }
 .brand-pill,
 .status-pill,
 .hq-card,
-.floor-menu {
-  background: rgba(14, 16, 18, 0.78);
-  color: #f4f7fa;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 10px 30px rgba(20, 24, 28, 0.12);
-  backdrop-filter: blur(16px);
+.floor-menu,
+.activity-bubble,
+.access-toast,
+.bot-tip,
+.office-app .roster,
+.pin-card {
+  background: rgba(16, 20, 26, 0.58);
+  color: #f7fafc;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -10px 18px rgba(0, 0, 0, 0.14),
+    0 14px 36px rgba(16, 20, 28, 0.16);
+  backdrop-filter: blur(22px) saturate(1.45);
+  -webkit-backdrop-filter: blur(22px) saturate(1.45);
 }
 
 .brand-pill {
@@ -1216,8 +1225,8 @@ body:has(.office-app.is-classified) { background: #12060a; }
   width: min(280px, calc(100vw - 32px));
   border-radius: 18px;
   padding: 14px 14px 12px;
-  box-shadow: 0 16px 40px rgba(20, 24, 28, 0.16);
 }
+.floor-card { box-shadow: 0 16px 40px rgba(20, 24, 28, 0.16); }
 .hq-card { display: flex; flex-direction: column; gap: 2px; }
 .hq-card b { font-size: 15px; }
 .hq-card span { font-size: 13px; color: rgba(244, 247, 250, 0.8); }
@@ -1232,11 +1241,11 @@ body:has(.office-app.is-classified) { background: #12060a; }
 .floor-dots span { margin-left: 4px; font-size: 12px; }
 
 .pin-card {
-  background: rgba(14, 16, 18, 0.9);
-  color: #f7f8fa;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(16px);
-  box-shadow: inset 4px 0 0 var(--bot, #c5ced6), 0 16px 40px rgba(20, 24, 28, 0.2);
+  box-shadow:
+    inset 4px 0 0 var(--bot, #c5ced6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -10px 18px rgba(0, 0, 0, 0.14),
+    0 16px 40px rgba(16, 20, 28, 0.18);
 }
 .pin-x {
   position: absolute;
@@ -1286,10 +1295,6 @@ body:has(.office-app.is-classified) { background: #12060a; }
   max-width: min(520px, calc(100% - 32px));
   padding: 8px 14px;
   border-radius: 999px;
-  background: rgba(14, 16, 18, 0.82);
-  color: #f7f8fa;
-  backdrop-filter: blur(14px);
-  box-shadow: 0 10px 28px rgba(20, 24, 28, 0.16);
   pointer-events: none;
   animation: bubbleIn 0.35s ease;
 }
@@ -1303,23 +1308,16 @@ body:has(.office-app.is-classified) { background: #12060a; }
   transform: translate(-50%, -50%);
   padding: 12px 22px;
   border-radius: 999px;
-  background: rgba(10, 10, 12, 0.82);
-  color: #fff;
   letter-spacing: 0.18em;
-  backdrop-filter: blur(12px);
   pointer-events: none;
   animation: bubbleIn 0.3s ease;
 }
 
 .bot-tip {
-  background: rgba(14, 16, 18, 0.84);
-  color: #f7f8fa;
   border-radius: 14px;
   padding: 8px 12px 9px;
   min-width: 150px;
   max-width: 220px;
-  box-shadow: 0 12px 32px rgba(16, 20, 24, 0.22);
-  backdrop-filter: blur(12px);
   transform: translateY(-8px);
   text-align: left;
 }
@@ -1350,9 +1348,6 @@ body:has(.office-app.is-classified) { background: #12060a; }
   bottom: 10px;
   z-index: 6;
   border-radius: 18px;
-  background: rgba(14, 16, 18, 0.78);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(18px);
   color: #e8ecef;
 }
 .office-app .agent-cards { padding: 8px; }

@@ -1,38 +1,64 @@
 import { useLayoutEffect, useRef, useState } from 'react';
-import { OrbitControls } from '@react-three/drei';
+import { ContactShadows, Environment, Lightformer, OrbitControls, SoftShadows } from '@react-three/drei';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { MOUSE, TOUCH, ACESFilmicToneMapping, PCFSoftShadowMap, Vector3, type OrthographicCamera } from 'three';
+import { ACESFilmicToneMapping, MOUSE, PCFSoftShadowMap, TOUCH, Vector3, type OrthographicCamera } from 'three';
 import type { ComponentRef } from 'react';
 import type { FleetBot } from '../../game/fleet';
 import { useFleet } from '../../game/useFleet';
 import { ClassifiedBots, FloorBots } from './Bots';
-import { Grounds, Monument, Shell } from './Campus';
+import { Dollhouse, Grounds, Monument } from './Campus';
 import { ClassifiedInterior, ContentInterior, LobbyInterior, NightInterior, ResearchInterior } from './Interiors';
-import { frameZoom, poseFor, type FloorId } from './model';
+import { frameZoom, poseFor, type FloorId, type HomeFloor } from './model';
 import { OfficeChrome } from './OfficeChrome';
+
+function springScalar(value: number, target: number, vel: { v: number }, omega: number, dt: number) {
+  const step = 1 / 60;
+  let left = Math.min(dt, 0.05);
+  let current = value;
+  while (left > 0.0001) {
+    const h = Math.min(step, left);
+    const x = current - target;
+    vel.v += (-omega * omega * x - 2 * omega * vel.v) * h;
+    current += vel.v * h;
+    left -= h;
+  }
+  return current;
+}
+
+function springVec(current: Vector3, target: Vector3, vel: Vector3, omega: number, dt: number) {
+  const scratch = { v: vel.x };
+  current.x = springScalar(current.x, target.x, scratch, omega, dt);
+  vel.x = scratch.v;
+  scratch.v = vel.y;
+  current.y = springScalar(current.y, target.y, scratch, omega, dt);
+  vel.y = scratch.v;
+  scratch.v = vel.z;
+  current.z = springScalar(current.z, target.z, scratch, omega, dt);
+  vel.z = scratch.v;
+}
 
 function Lights({ floor }: { floor: FloorId }) {
   const dark = floor === 'classified';
   return (
     <>
-      <hemisphereLight color={dark ? '#ff7382' : '#f7fbff'} groundColor={dark ? '#2a0610' : '#d5dde6'} intensity={dark ? 0.28 : 0.92} />
-      <ambientLight intensity={dark ? 0.07 : 0.48} />
+      <hemisphereLight color={dark ? '#ff7382' : '#fff1df'} groundColor={dark ? '#2a0610' : '#c9d3c4'} intensity={dark ? 0.28 : 0.78} />
+      <ambientLight intensity={dark ? 0.08 : 0.24} color={dark ? '#ffd0d6' : '#fff6ea'} />
       <directionalLight
-        position={[14, 22, 10]}
-        intensity={dark ? 0.22 : 1.55}
-        color={dark ? '#ffd0d4' : '#fff8f2'}
+        position={[16, 24, 12]}
+        intensity={dark ? 0.22 : 1.7}
+        color={dark ? '#ffd0d4' : '#fff3e2'}
         castShadow
         shadow-mapSize-width={2048}
         shadow-mapSize-height={2048}
         shadow-camera-near={1}
-        shadow-camera-far={60}
-        shadow-camera-left={-22}
-        shadow-camera-right={22}
-        shadow-camera-top={22}
-        shadow-camera-bottom={-22}
-        shadow-bias={-0.0004}
+        shadow-camera-far={64}
+        shadow-camera-left={-24}
+        shadow-camera-right={24}
+        shadow-camera-top={24}
+        shadow-camera-bottom={-24}
+        shadow-bias={-0.00035}
       />
-      {!dark && <directionalLight position={[-10, 8, -6]} intensity={0.38} color="#d5e6f6" />}
+      {!dark && <directionalLight position={[-12, 9, -8]} intensity={0.42} color="#d5e4f6" />}
     </>
   );
 }
@@ -41,65 +67,71 @@ function CameraRig({ floor }: { floor: FloorId }) {
   const camera = useThree((s) => s.camera) as OrthographicCamera;
   const size = useThree((s) => s.size);
   const controls = useRef<ComponentRef<typeof OrbitControls>>(null);
-  const scratch = useRef(new Vector3());
-  const anim = useRef({
-    t: 1,
-    from: new Vector3(),
-    to: new Vector3(),
-    fromLook: new Vector3(),
-    toLook: new Vector3(),
-    fromZoom: 34,
-    toZoom: 34,
-  });
-  const [moving, setMoving] = useState(false);
-  const sizeRef = useRef(size);
-  sizeRef.current = size;
+  const look = useRef(new Vector3(0.7, 6.3, 0.45));
+  const posVel = useRef(new Vector3());
+  const lookVel = useRef(new Vector3());
+  const zoomVel = useRef({ v: 0 });
+  const goalPos = useRef(new Vector3());
+  const goalLook = useRef(new Vector3());
+  const movingRef = useRef(true);
+  const [moving, setMoving] = useState(true);
+
+  const setMove = (next: boolean) => {
+    if (movingRef.current === next) return;
+    movingRef.current = next;
+    setMoving(next);
+  };
 
   useLayoutEffect(() => {
     const spec = poseFor(floor);
-    const zoom = frameZoom(spec.zoom, sizeRef.current.width, sizeRef.current.height);
-    const a = anim.current;
-    a.from.copy(camera.position);
-    a.to.set(spec.pos[0], spec.pos[1], spec.pos[2]);
-    const ctrl = controls.current;
-    if (ctrl) a.fromLook.copy(ctrl.target);
-    else a.fromLook.set(0, 0, 0);
-    a.toLook.set(spec.look[0], spec.look[1], spec.look[2]);
-    a.fromZoom = camera.zoom;
-    a.toZoom = zoom;
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduce) {
-      camera.position.copy(a.to);
-      camera.zoom = zoom;
-      camera.updateProjectionMatrix();
-      camera.lookAt(a.toLook);
-      if (ctrl) {
-        ctrl.target.copy(a.toLook);
-        ctrl.update();
-      }
-      a.t = 1;
-      setMoving(false);
+    posVel.current.set(0, 0, 0);
+    lookVel.current.set(0, 0, 0);
+    zoomVel.current.v = 0;
+    if (!reduce) {
+      setMove(true);
       return;
     }
-    a.t = 0;
-    setMoving(true);
-  }, [floor, camera]);
+    const zoom = frameZoom(spec.zoom, size.width, size.height);
+    camera.position.set(spec.pos[0], spec.pos[1], spec.pos[2]);
+    look.current.set(spec.look[0], spec.look[1], spec.look[2]);
+    camera.zoom = zoom;
+    camera.updateProjectionMatrix();
+    camera.lookAt(look.current);
+    const ctrl = controls.current;
+    if (ctrl) {
+      ctrl.target.copy(look.current);
+      ctrl.update();
+    }
+    setMove(false);
+  }, [floor, camera, size.width, size.height]);
 
-  useFrame((_, dt) => {
-    const a = anim.current;
-    if (a.t >= 1) return;
-    a.t = Math.min(1, a.t + dt / 0.85);
-    const k = a.t < 0.5 ? 2 * a.t * a.t : 1 - (-2 * a.t + 2) ** 2 / 2;
-    camera.position.lerpVectors(a.from, a.to, k);
-    const look = scratch.current.copy(a.fromLook).lerp(a.toLook, k);
-    camera.lookAt(look);
-    camera.zoom = a.fromZoom + (a.toZoom - a.fromZoom) * k;
+  useFrame((_, rawDt) => {
+    if (!movingRef.current) return;
+    const spec = poseFor(floor);
+    const zoomGoal = frameZoom(spec.zoom, size.width, size.height);
+    goalPos.current.set(spec.pos[0], spec.pos[1], spec.pos[2]);
+    goalLook.current.set(spec.look[0], spec.look[1], spec.look[2]);
+    springVec(camera.position, goalPos.current, posVel.current, 6.6, rawDt);
+    springVec(look.current, goalLook.current, lookVel.current, 6.6, rawDt);
+    camera.zoom = springScalar(camera.zoom, zoomGoal, zoomVel.current, 6.6, rawDt);
+    camera.lookAt(look.current);
     camera.updateProjectionMatrix();
     const ctrl = controls.current;
-    if (ctrl) ctrl.target.copy(look);
-    if (a.t >= 1 && ctrl) {
-      ctrl.update();
-      setMoving(false);
+    if (ctrl) ctrl.target.copy(look.current);
+    const err = camera.position.distanceTo(goalPos.current) + look.current.distanceTo(goalLook.current);
+    const speed = posVel.current.length() + lookVel.current.length() + Math.abs(zoomVel.current.v);
+    if (err < 0.045 && speed < 0.06 && Math.abs(camera.zoom - zoomGoal) < 0.12) {
+      camera.position.copy(goalPos.current);
+      look.current.copy(goalLook.current);
+      camera.zoom = zoomGoal;
+      camera.lookAt(look.current);
+      camera.updateProjectionMatrix();
+      if (ctrl) {
+        ctrl.target.copy(look.current);
+        ctrl.update();
+      }
+      setMove(false);
     }
   });
 
@@ -121,6 +153,28 @@ function CameraRig({ floor }: { floor: FloorId }) {
   );
 }
 
+function FloorSet({
+  id,
+  bots,
+  selectedId,
+  onSelect,
+}: {
+  id: HomeFloor;
+  bots: readonly FleetBot[];
+  selectedId: string | null;
+  onSelect: (id: string) => void;
+}) {
+  return (
+    <>
+      {id === 'night' && <NightInterior />}
+      {id === 'content' && <ContentInterior />}
+      {id === 'research' && <ResearchInterior />}
+      {id === 'lobby' && <LobbyInterior />}
+      <FloorBots floor={id} bots={bots} selectedId={selectedId} onSelect={onSelect} />
+    </>
+  );
+}
+
 function World({
   floor,
   bots,
@@ -136,37 +190,26 @@ function World({
   return (
     <>
       <color attach="background" args={[dark ? '#12060a' : '#e7ebf0']} />
-      <fog attach="fog" args={[dark ? '#12060a' : '#e7ebf0', dark ? 14 : 28, dark ? 36 : 58]} />
+      <fog attach="fog" args={[dark ? '#12060a' : '#e7ebf0', dark ? 14 : 34, dark ? 36 : 72]} />
+      {!dark && <SoftShadows size={12} samples={6} focus={0.45} />}
+      {!dark && (
+        <Environment resolution={128} frames={1} environmentIntensity={1}>
+          <Lightformer form="rect" intensity={2.6} position={[7, 8, 8]} scale={[14, 8, 1]} color="#fff1e0" />
+          <Lightformer form="rect" intensity={1.5} position={[-8, 5, -5]} scale={[12, 6, 1]} color="#d7e6f6" />
+          <Lightformer form="rect" intensity={1.15} position={[0, 12, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[20, 20, 1]} color="#ffffff" />
+        </Environment>
+      )}
       <Lights floor={floor} />
       <CameraRig floor={floor} />
       {!dark && <Grounds />}
-      {floor === 'overview' && <Monument />}
-      {floor === 'overview' && <Shell />}
-      {floor === 'night' && (
-        <>
-          <NightInterior />
-          <FloorBots floor="night" bots={bots} selectedId={selectedId} onSelect={onSelect} />
-        </>
+      {!dark && <Monument />}
+      {!dark && (
+        <Dollhouse floor={floor}>{(id) => <FloorSet id={id} bots={bots} selectedId={selectedId} onSelect={onSelect} />}</Dollhouse>
       )}
-      {floor === 'content' && (
-        <>
-          <ContentInterior />
-          <FloorBots floor="content" bots={bots} selectedId={selectedId} onSelect={onSelect} />
-        </>
+      {!dark && (
+        <ContactShadows position={[0.4, 0.01, 0.2]} opacity={0.32} scale={22} blur={2.4} far={4.5} resolution={512} frames={1} color="#6a7380" />
       )}
-      {floor === 'research' && (
-        <>
-          <ResearchInterior />
-          <FloorBots floor="research" bots={bots} selectedId={selectedId} onSelect={onSelect} />
-        </>
-      )}
-      {floor === 'lobby' && (
-        <>
-          <LobbyInterior />
-          <FloorBots floor="lobby" bots={bots} selectedId={selectedId} onSelect={onSelect} />
-        </>
-      )}
-      {floor === 'classified' && (
+      {dark && (
         <>
           <ClassifiedInterior />
           <ClassifiedBots bots={bots} selectedId={selectedId} onSelect={onSelect} />
@@ -198,14 +241,15 @@ export function OfficeStage({
         <Canvas
           orthographic
           shadows
-          dpr={[1, 1.75]}
-          camera={{ position: [24, 18, 24], zoom: 34, near: 0.1, far: 240 }}
-          gl={{ antialias: true, alpha: false }}
+          dpr={[1, 1.5]}
+          camera={{ position: [23, 17.5, 23], zoom: 40, near: 0.1, far: 260 }}
+          gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
           fallback={<div className="webgl-fallback">这台浏览器开不了 3D 办公室。</div>}
-          onCreated={({ gl }) => {
+          onCreated={({ gl, scene }) => {
             gl.toneMapping = ACESFilmicToneMapping;
-            gl.toneMappingExposure = 1.06;
+            gl.toneMappingExposure = 1.05;
             gl.shadowMap.type = PCFSoftShadowMap;
+            scene.environmentIntensity = 1;
           }}
         >
           <World floor={floor} bots={fleet.bots} selectedId={selectedId} onSelect={(id) => onSelectBot(id)} />

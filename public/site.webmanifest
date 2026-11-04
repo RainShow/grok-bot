@@ -1,0 +1,18 @@
+{
+  "name": "Grok City",
+  "short_name": "Grok City",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#e7ebf0",
+  "theme_color": "#1c242c",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "./favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

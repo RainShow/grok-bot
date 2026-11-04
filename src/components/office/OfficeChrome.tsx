@@ -87,7 +87,7 @@ export function OfficeChrome({
       <div className="brand-pill">
         <span className="brand-mark" aria-hidden />
         <span className="brand-copy">
-          <b>{zh ? '不可思议空间' : 'Incredible Space'}</b>
+          <b>Grok City</b>
           <small>
             <i /> {t.live}
           </small>
@@ -144,7 +144,7 @@ export function OfficeChrome({
         </aside>
       ) : floor === 'overview' ? (
         <aside className="hq-card" data-testid="hq-card">
-          <b>{zh ? '不可思议空间' : 'Incredible Space'}</b>
+          <b>Grok City</b>
           <span>{zh ? '总部' : 'Headquarters'}</span>
           <small>{zh ? '样例夜班，不会真的发出去' : 'Sample night shift. Nothing is actually sent'}</small>
         </aside>

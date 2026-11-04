@@ -67,18 +67,24 @@ export function useStoryTexture() {
 
 export function useSignTexture(rev: number) {
   const tex = useMemo(
-    () =>
-      canvasTexture((g, w, h) => {
+    () => {
+      void rev;
+      return canvasTexture((g, w, h) => {
         g.clearRect(0, 0, w, h);
+        g.fillStyle = 'rgba(255,255,255,0.78)';
+        g.beginPath();
+        g.roundRect(24, 28, w - 48, h - 56, 28);
+        g.fill();
         g.textAlign = 'center';
         g.textBaseline = 'middle';
-        g.fillStyle = '#1b242c';
-        g.font = '700 112px "Noto Sans SC", "Space Grotesk", sans-serif';
-        g.fillText('不可思议', w / 2, h * 0.4);
-        g.font = '500 34px "Space Grotesk", sans-serif';
+        g.fillStyle = '#1a222b';
+        g.font = '700 108px "Space Grotesk", sans-serif';
+        g.fillText('GROK CITY', w / 2, h * 0.46);
+        g.font = '500 28px "Noto Sans SC", "Space Grotesk", sans-serif';
         g.fillStyle = '#5c6b78';
-        g.fillText('INCREDIBLE SPACE', w / 2, h * 0.74);
-      }, 1024, 280),
+        g.fillText('办公室', w / 2, h * 0.74);
+      }, 1024, 280);
+    },
     [rev],
   );
   useEffect(() => () => tex.dispose(), [tex]);
