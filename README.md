@@ -1,4 +1,4 @@
-# 不可思议之城
+# Grok City
 
 夜班仪表盘。底栏是 Grok Bot 花名册，读 `public/fleet.json`（样例，失败时用内嵌同一份）。夜班核心六个在城里走稿：proto → pumpkin → design → analysis → Grok → post。其余 bot 在底栏里滚动，点开一张卡可以复制 id，或用 `grokbot://` 打开对话。城中心是借腹南瓜城，广场边上立着七道门：时间、因果、重力、知觉、尺度、形体、路径。
 
