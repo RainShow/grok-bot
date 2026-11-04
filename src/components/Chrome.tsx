@@ -27,7 +27,7 @@ export function Header() {
         </button>
         <div>
           <h1>
-            不可思议之城
+            {t.brand}
             <span className="shift">[ {t.night} ]</span>
           </h1>
           {t.gloss && <div className="gloss">{t.gloss}</div>}

@@ -151,7 +151,7 @@ export function say(lang: Lang, p: Phrase): string {
   const zh = lang === 'zh';
   switch (p.id) {
     case 'boot':
-      return zh ? '夜班开始。不可思议之城亮了。' : 'Night shift. 不可思议之城 — Incredible Space City — is lit.';
+      return zh ? '夜班开始。Grok City 亮了。' : 'Night shift. Grok City is lit.';
     case 'wrap':
       return zh ? '夜班收工，汇总在这儿' : 'Night shift wrapped. The summary is up.';
     case 'restart':
@@ -224,6 +224,7 @@ export function say(lang: Lang, p: Phrase): string {
 }
 
 export interface Dict {
+  brand: string;
   night: string;
   gloss: string;
   online: string;
@@ -314,8 +315,9 @@ export interface Dict {
 }
 
 const zh: Dict = {
+  brand: 'Grok City',
   night: '夜班',
-  gloss: '',
+  gloss: 'Grok City',
   online: '在线',
   done: '完成',
   needs: '需要你',
@@ -377,7 +379,7 @@ const zh: Dict = {
   pieces: (n) => `${n} 件`,
   onStreet: '在街上',
   toward: (name) => `→ ${name}`,
-  crumbs: '不可思议空间 · 夜班 · 第一夜',
+  crumbs: 'Grok City · 夜班 · 第一夜',
   summary: (ended, clock) => (ended ? `夜班汇总 · ${clock} 收工` : '夜班汇总 · 还在走'),
   summaryAria: '夜班汇总',
   doorsPicked: (you, all) => `你选的门：${you} / 一共 ${all}`,
@@ -404,8 +406,9 @@ const zh: Dict = {
 };
 
 const en: Dict = {
+  brand: 'Grok City',
   night: 'NIGHT',
-  gloss: 'Incredible Space City',
+  gloss: 'Grok City',
   online: 'Online',
   done: 'Done',
   needs: 'Needs you',
@@ -467,7 +470,7 @@ const en: Dict = {
   pieces: (n) => `${n} done`,
   onStreet: 'On the street',
   toward: (name) => `→ ${name}`,
-  crumbs: 'Incredible Space · night shift · night one',
+  crumbs: 'Grok City · night shift · night one',
   summary: (ended, clock) => (ended ? `Night summary · wrapped ${clock}` : 'Night summary · still going'),
   summaryAria: 'Night summary',
   doorsPicked: (you, all) => `Doors you picked: ${you} of ${all}`,
