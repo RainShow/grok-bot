@@ -22,8 +22,8 @@ export interface FleetFile {
 const STATUSES: readonly FleetStatus[] = ['idle', 'busy', 'needs_you', 'offline'];
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** Night-shift walkers stay first. Everyone else keeps file order. */
-const NIGHT_CORE = ['proto', 'pumpkin', 'analysis', 'grok', 'design', 'post'];
+/** Sample roster order. Old English night-core keys no longer match the Chinese names. */
+const NIGHT_CORE = ['开发', 'grok', '运营', '行业分析', '设计', '设计调研', '注册', '问答', '读书', '运维', 'dr eggbot'];
 
 function canonicalDeepLink(id: string) {
   return `grokbot://app/v1/agent?id=${id}`;
